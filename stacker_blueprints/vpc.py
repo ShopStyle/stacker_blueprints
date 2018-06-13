@@ -75,8 +75,10 @@ class VPC(Blueprint):
         t = self.template
         t.add_resource(ec2.VPC(
             VPC_NAME,
-            CidrBlock=self.get_variables()["CidrBlock"], EnableDnsSupport=True,
-            EnableDnsHostnames=True))
+            CidrBlock=self.get_variables()["CidrBlock"],
+            EnableDnsSupport=True,
+            EnableDnsHostnames=True,
+        ))
 
         # Just about everything needs this, so storing it on the object
         t.add_output(Output("VpcId", Value=VPC_ID))

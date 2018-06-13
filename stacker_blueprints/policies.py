@@ -15,6 +15,7 @@ from troposphere import (
 )
 
 from awacs import (
+    awslambda,
     sts,
     s3,
     logs,
@@ -184,7 +185,21 @@ def cloudwatch_logs_write_statements(log_group=None):
             Action=[
                 logs.CreateLogGroup,
                 logs.CreateLogStream,
-                logs.PutLogEvents
+                logs.PutLogEvents,
+                logs.DescribeLogStreams,
+            ]
+        )
+    ]
+
+
+def lambda_invoke_function_statements():
+
+    return [
+        Statement(
+            Effect=Allow,
+            Resource=["*"],
+            Action=[
+                awslambda.InvokeFunction,
             ]
         )
     ]
