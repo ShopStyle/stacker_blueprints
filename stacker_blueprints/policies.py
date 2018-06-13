@@ -217,7 +217,7 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
     )
 
 
-def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
+def cloudwatch_logs_resources(log_group=None, log_stream_prefix=None):
     if not log_stream_prefix:
         log_stream_prefix = "*"
     resources = ["arn:aws:logs:*:*:*"]
@@ -231,11 +231,18 @@ def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
         )
 
         resources = [log_group_arn, log_stream_wild]
+    return resources
+
+
+def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
 
     return [
         Statement(
             Effect=Allow,
-            Resource=resources,
+            Resource=cloudwatch_logs_resources(
+                log_group=log_group,
+                log_stream_prefix=log_stream_prefix,
+            ),
             Action=[
                 logs.CreateLogGroup,
                 logs.CreateLogStream,
@@ -245,9 +252,45 @@ def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
     ]
 
 
+def lambda_log_group(function_name):
+    return Join("/", ["/aws/lambda", function_name])
+
+
 def lambda_basic_execution_statements(function_name):
-    log_group = Join("/", ["/aws/lambda", function_name])
-    return cloudwatch_logs_write_statements(log_group)
+    return cloudwatch_logs_write_statements(lambda_log_group(function_name))
+
+
+def lambda_edge_execution_statements(function_name, **kwargs):
+
+    resources = cloudwatch_logs_resources(
+        lambda_log_group(function_name), **kwargs)
+
+    return [
+        Statement(
+            Effect=Allow,
+            Resource=resources,
+            Action=[
+                logs.CreateLogStream,
+            ]
+        ),
+        Statement(
+            Effect=Allow,
+            Resource=resources,
+            Action=[
+                logs.PutLogEvents,
+            ]
+        ),
+        Statement(
+            Effect=Allow,
+            Resource=["arn:aws:logs:*:*:*"],
+            Action=[
+                logs.CreateLogGroup,
+                logs.CreateLogStream,
+                logs.PutLogEvents,
+                logs.DescribeLogStreams,
+            ]
+        )
+    ]
 
 
 def lambda_basic_execution_policy(function_name):
