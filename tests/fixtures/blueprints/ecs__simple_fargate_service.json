@@ -1,0 +1,160 @@
+{
+    "Outputs": {
+        "ServiceArn": {
+            "Value": {
+                "Ref": "TaskExecutionRole"
+            }
+        }, 
+        "ServiceName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TaskExecutionRole", 
+                    "Name"
+                ]
+            }
+        }, 
+        "TaskDefinitionArn": {
+            "Value": {
+                "Ref": "TaskDefinition"
+            }
+        }, 
+        "TaskExecutionRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TaskExecutionRole", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "TaskExecutionRoleName": {
+            "Value": {
+                "Ref": "TaskExecutionRole"
+            }
+        }
+    }, 
+    "Resources": {
+        "Service": {
+            "Properties": {
+                "Cluster": "fake-fargate-cluster", 
+                "DesiredCount": 3, 
+                "LaunchType": "FARGATE", 
+                "NetworkConfiguration": {
+                    "AwsvpcConfiguration": {
+                        "SecurityGroups": [
+                            "sg-abc1234"
+                        ], 
+                        "Subnets": [
+                            "net-123456", 
+                            "net-5678910"
+                        ]
+                    }
+                }, 
+                "ServiceName": "WorkerService", 
+                "TaskDefinition": {
+                    "Ref": "TaskDefinition"
+                }
+            }, 
+            "Type": "AWS::ECS::Service"
+        }, 
+        "TaskDefinition": {
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Command": [
+                            "/bin/run"
+                        ], 
+                        "Cpu": 1024, 
+                        "Environment": [
+                            {
+                                "Name": "DEBUG", 
+                                "Value": "false"
+                            }, 
+                            {
+                                "Name": "DATABASE_URL", 
+                                "Value": "sql://fake_db/fake_db"
+                            }
+                        ], 
+                        "Essential": "true", 
+                        "Image": "fake_repo/image:12345", 
+                        "LogConfiguration": {
+                            "Ref": "AWS::NoValue"
+                        }, 
+                        "Memory": 2048, 
+                        "Name": "WorkerService"
+                    }
+                ], 
+                "Cpu": "1024", 
+                "ExecutionRoleArn": {
+                    "Fn::GetAtt": [
+                        "TaskExecutionRole", 
+                        "Arn"
+                    ]
+                }, 
+                "Family": "WorkerService", 
+                "Memory": "2048", 
+                "NetworkMode": "awsvpc", 
+                "TaskRoleArn": {
+                    "Ref": "AWS::NoValue"
+                }
+            }, 
+            "Type": "AWS::ECS::TaskDefinition"
+        }, 
+        "TaskExecutionRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ecs.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "TaskExecutionRolePolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:BatchCheckLayerAvailability", 
+                                "ecr:GetDownloadUrlForLayer", 
+                                "ecr:BatchGetImage"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-task-exeuction-role-policy"
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "TaskExecutionRole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }
+    }
+}
