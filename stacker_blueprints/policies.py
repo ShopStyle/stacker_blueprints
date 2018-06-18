@@ -170,7 +170,7 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
 
 
 def cloudwatch_logs_write_statements(log_group=None):
-    resources = ["arn:aws:logs:*:*:*"]
+    statements = []
     if log_group:
         log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
                            ":log-group:", log_group]
@@ -178,10 +178,30 @@ def cloudwatch_logs_write_statements(log_group=None):
         log_stream_wild = Join("", log_group_parts + [":*"])
         resources = [log_group_arn, log_stream_wild]
 
-    return [
+        statements.append(
+            Statement(
+                Effect=Allow,
+                Resource=resources,
+                Action=[
+                    logs.CreateLogStream,
+                ]
+            )
+        )
+
+        statements.append(
+            Statement(
+                Effect=Allow,
+                Resource=resources,
+                Action=[
+                    logs.PutLogEvents,
+                ]
+            )
+        )
+
+    statements.append(
         Statement(
             Effect=Allow,
-            Resource=resources,
+            Resource=["arn:aws:logs:*:*:*"],
             Action=[
                 logs.CreateLogGroup,
                 logs.CreateLogStream,
@@ -189,7 +209,9 @@ def cloudwatch_logs_write_statements(log_group=None):
                 logs.DescribeLogStreams,
             ]
         )
-    ]
+    )
+
+    return statements
 
 
 def lambda_invoke_function_statements():
