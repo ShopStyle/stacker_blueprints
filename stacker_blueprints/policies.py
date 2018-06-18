@@ -17,6 +17,7 @@ from troposphere import (
 from awacs import (
     cloudwatch,
     dynamodb,
+    ecr,
     kinesis,
     ec2,
     logs,
@@ -216,13 +217,19 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
     )
 
 
-def cloudwatch_logs_write_statements(log_group=None):
+def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
+    if not log_stream_prefix:
+        log_stream_prefix = "*"
     resources = ["arn:aws:logs:*:*:*"]
     if log_group:
         log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
                            ":log-group:", log_group]
         log_group_arn = Join("", log_group_parts)
-        log_stream_wild = Join("", log_group_parts + [":*"])
+        log_stream_wild = Join(
+            "",
+            log_group_parts + [":" + log_stream_prefix]
+        )
+
         resources = [log_group_arn, log_stream_wild]
 
     return [
@@ -291,4 +298,48 @@ def dynamodb_autoscaling_policy(tables):
                 ]
             ),
         ]
+    )
+
+
+def ecr_repo_client_statements(ecr_repo="*"):
+    statements = []
+    statements.append(
+        Statement(
+            Effect=Allow,
+            Resource=["*"],
+            Action=[ecr.GetAuthorizationToken, ]
+        )
+    )
+
+    statements.append(
+        Statement(
+            Effect=Allow,
+            Resource=[ecr_repo],
+            Action=[
+                ecr.BatchCheckLayerAvailability,
+                ecr.GetDownloadUrlForLayer,
+                ecr.BatchGetImage,
+            ]
+        )
+    )
+
+    return statements
+
+
+def ecs_task_execution_statements(ecr_repo="*", log_group=None,
+                                  log_stream_prefix=None):
+    statements = ecr_repo_client_statements(ecr_repo)
+    if log_group:
+        statements.extend(
+            cloudwatch_logs_write_statements(log_group, log_stream_prefix)
+        )
+    return statements
+
+
+def ecs_task_execution_policy(ecr_repo="*", log_group=None,
+                              log_stream_prefix=None):
+    return Policy(
+        Statement=ecs_task_execution_statements(
+            ecr_repo, log_group, log_stream_prefix
+        )
     )
