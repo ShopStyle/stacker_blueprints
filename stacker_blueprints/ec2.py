@@ -60,3 +60,25 @@ class Instances(Blueprint):
                     Value=instance.GetAtt("PublicIp")
                 )
             )
+
+
+class SecurityGroups(Blueprint):
+    VARIABLES = {
+        "SecurityGroups": {
+            "type": TroposphereType(ec2.SecurityGroup, many=True),
+            "description": "Configuration for multiple security groups.",
+        }
+    }
+
+    def create_template(self):
+        t = self.template
+
+        for security_group in self.get_variables()["SecurityGroups"]:
+            t.add_resource(security_group)
+            title = security_group.title
+            t.add_output(
+                Output(
+                    title + "Id",
+                    Value=security_group.GetAtt("GroupId"),
+                )
+            )
