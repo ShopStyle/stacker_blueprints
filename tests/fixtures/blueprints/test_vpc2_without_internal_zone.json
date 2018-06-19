@@ -10,9 +10,14 @@
         }, 
         "CidrBlockAssociations": {
             "Value": {
-                "Fn::GetAtt": [
-                    "MyVPC", 
-                    "CidrBlockAssociations"
+                "Fn::Join": [
+                    ",", 
+                    {
+                        "Fn::GetAtt": [
+                            "MyVPC", 
+                            "CidrBlockAssociations"
+                        ]
+                    }
                 ]
             }
         }, 
@@ -44,9 +49,14 @@
         }, 
         "Ipv6CidrBlocks": {
             "Value": {
-                "Fn::GetAtt": [
-                    "MyVPC", 
-                    "Ipv6CidrBlocks"
+                "Fn::Join": [
+                    ",", 
+                    {
+                        "Fn::GetAtt": [
+                            "MyVPC", 
+                            "Ipv6CidrBlocks"
+                        ]
+                    }
                 ]
             }
         }, 

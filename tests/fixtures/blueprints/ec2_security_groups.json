@@ -1,0 +1,20 @@
+{
+    "Outputs": {
+        "MySG1Id": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MySG1", 
+                    "GroupId"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "MySG1": {
+            "Properties": {
+                "GroupDescription": "My first SecurityGroup"
+            }, 
+            "Type": "AWS::EC2::SecurityGroup"
+        }
+    }
+}

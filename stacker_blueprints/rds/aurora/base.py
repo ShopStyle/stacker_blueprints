@@ -1,5 +1,6 @@
 from troposphere import (
-    GetAtt, Ref, ec2, Output, Tags
+    GetAtt, NoValue, Output, Ref, Tags,
+    ec2,
 )
 from troposphere.rds import (
     DBSubnetGroup,
@@ -19,6 +20,7 @@ PARAMETER_GROUP = "ClusterParameterGroup"
 SECURITY_GROUP = "SecurityGroup"
 DBCLUSTER = "DBCluster"
 DNS_RECORD = "DBClusterMasterDnsRecord"
+DNS_READ_RECORD = "DBClusterReadDnsRecord"
 
 
 class Cluster(Blueprint):
@@ -31,7 +33,8 @@ class Cluster(Blueprint):
         },
         "DatabaseName": {
             "type": str,
-            "description": "Initial db to create in database."
+            "description": "Initial db to create in database.",
+            "default": ""
         },
         "DBFamily": {
             "type": str,
@@ -51,19 +54,26 @@ class Cluster(Blueprint):
             "type": str,
             "description": "A comma separated list of subnet ids."
         },
-
         "EngineVersion": {
             "type": str,
             "description": "Database engine version for the RDS Instance.",
+            "default": "",
         },
         "MasterUser": {
             "type": str,
             "description": "Name of the master user in the db.",
+            "default": "",
         },
         "MasterUserPassword": {
             "type": CFNString,
             "no_echo": True,
-            "description": "Master user password."
+            "description": "Master user password.",
+            "default": "",
+        },
+        "Port": {
+            "type": int,
+            "description": "Port for the database listening in.",
+            "default": 0,
         },
         "PreferredBackupWindow": {
             "type": str,
@@ -117,6 +127,13 @@ class Cluster(Blueprint):
             "default": "",
             "description": "Internal domain name, if you have one."
         },
+        "ReplicationSourceArn": {
+            "type": str,
+            "description": "The Amazon Resource Name (ARN) of the source "
+                           "Amazon RDS DB instance or DB cluster, "
+                           "if this DB cluster is created as a Read Replica",
+            "default": "",
+        },
     }
 
     def engine(self):
@@ -143,9 +160,32 @@ class Cluster(Blueprint):
             ]
         )
 
-    def get_db_snapshot_identifier(self):
+    def get_snapshot_identifier(self):
         variables = self.get_variables()
-        return variables["DBSnapshotIdentifier"] or Ref("AWS::NoValue")
+        return variables["SnapshotIdentifier"] or NoValue
+
+    def get_master_user(self):
+        v = self.get_variables()
+        if v["SnapshotIdentifier"] or v["ReplicationSourceArn"]:
+            return NoValue
+        return v["MasterUser"]
+
+    def get_master_user_password(self):
+        v = self.get_variables()
+        if v["SnapshotIdentifier"] or v["ReplicationSourceArn"]:
+            return NoValue
+        return v["MasterUserPassword"].ref
+
+    def get_storage_encrypted(self):
+        v = self.get_variables()
+        if not v["StorageEncrypted"]:
+            return NoValue
+        return True
+
+    @property
+    def is_snapshot_restore(self):
+        variables = self.get_variables()
+        return bool(variables["SnapshotIdentifier"])
 
     def get_tags(self):
         variables = self.get_variables()
@@ -185,6 +225,14 @@ class Cluster(Blueprint):
         endpoint = GetAtt(DBCLUSTER, "Endpoint.Address")
         return endpoint
 
+    def get_read_endpoint(self):
+        endpoint = GetAtt(DBCLUSTER, "ReadEndpoint.Address")
+        return endpoint
+
+    def get_port(self):
+        port = GetAtt(DBCLUSTER, "Endpoint.Port")
+        return port
+
     def create_parameter_group(self):
         t = self.template
         variables = self.get_variables()
@@ -202,25 +250,36 @@ class Cluster(Blueprint):
     def create_cluster(self):
         t = self.template
         variables = self.get_variables()
-        parameter_group = Ref("AWS::NoValue")
+        parameter_group = NoValue
         if variables["ClusterParameters"]:
             parameter_group = Ref(PARAMETER_GROUP)
+
+        engine_version = variables["EngineVersion"] or NoValue
+        database_name = variables["DatabaseName"] or NoValue
+
+        replication_source_arn = variables["ReplicationSourceArn"] or NoValue
 
         t.add_resource(
             DBCluster(
                 DBCLUSTER,
+                DeletionPolicy="Snapshot",
                 BackupRetentionPeriod=variables["BackupRetentionPeriod"],
                 DBClusterParameterGroupName=parameter_group,
                 DBSubnetGroupName=Ref(SUBNET_GROUP),
                 Engine=self.engine() or variables["Engine"],
-                EngineVersion=variables["EngineVersion"],
-                MasterUsername=variables["MasterUser"],
-                MasterUserPassword=Ref("MasterUserPassword"),
+                EngineVersion=engine_version,
+                MasterUsername=self.get_master_user(),
+                MasterUserPassword=self.get_master_user_password(),
+                DatabaseName=database_name,
+                Port=variables["Port"] or self.port(),
                 PreferredBackupWindow=variables["PreferredBackupWindow"],
                 PreferredMaintenanceWindow=variables[
                     "PreferredMaintenanceWindow"],
+                SnapshotIdentifier=self.get_snapshot_identifier(),
                 Tags=self.get_tags(),
-                VpcSecurityGroupIds=[self.security_group, ]
+                VpcSecurityGroupIds=[self.security_group],
+                StorageEncrypted=self.get_storage_encrypted(),
+                ReplicationSourceIdentifier=replication_source_arn,
             )
         )
 
@@ -234,6 +293,8 @@ class Cluster(Blueprint):
                 variables["InternalHostname"],
                 variables["InternalZoneName"]
             )
+            read_hostname = "read.%s" % hostname
+
             t.add_resource(
                 RecordSetType(
                     DNS_RECORD,
@@ -246,16 +307,34 @@ class Cluster(Blueprint):
                     ResourceRecords=[self.get_master_endpoint()],
                 )
             )
+            t.add_resource(
+                RecordSetType(
+                    DNS_READ_RECORD,
+                    HostedZoneId=variables["InternalZoneId"],
+                    Comment="RDS DB CNAME Record (read endpoint)",
+                    Name=read_hostname,
+                    Type="CNAME",
+                    TTL="120",
+                    ResourceRecords=[self.get_read_endpoint()],
+                )
+            )
 
     def create_outputs(self):
         t = self.template
         t.add_output(
             Output("MasterEndpoint", Value=self.get_master_endpoint())
         )
+        t.add_output(
+            Output("ReadEndpoint", Value=self.get_read_endpoint())
+        )
+        t.add_output(Output("Port", Value=self.get_port()))
         t.add_output(Output("Cluster", Value=Ref(DBCLUSTER)))
         if self.should_create_internal_hostname():
             t.add_output(
                 Output("DBCname", Value=Ref(DNS_RECORD))
+            )
+            t.add_output(
+                Output("ReadDBCname", Value=Ref(DNS_READ_RECORD))
             )
 
     def create_template(self):
@@ -270,3 +349,14 @@ class Cluster(Blueprint):
 class AuroraCluster(Cluster):
     def engine(self):
         return "aurora"
+
+    def port(self):
+        return 3306
+
+
+class AuroraPGCluster(Cluster):
+    def engine(self):
+        return "aurora-postgresql"
+
+    def port(self):
+        return 5432

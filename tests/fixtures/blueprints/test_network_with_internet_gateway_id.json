@@ -1,0 +1,152 @@
+{
+    "Outputs": {
+        "AvailabilityZone": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Subnet", 
+                    "AvailabilityZone"
+                ]
+            }
+        }, 
+        "CidrBlock": {
+            "Value": "10.0.0.0/24"
+        }, 
+        "DefaultRouteId": {
+            "Value": {
+                "Ref": "DefaultRoute"
+            }
+        }, 
+        "Ipv6CidrBlocks": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Subnet", 
+                    "Ipv6CidrBlocks"
+                ]
+            }
+        }, 
+        "NatGatewayEIP": {
+            "Value": {
+                "Ref": "NatGatewayEIP"
+            }
+        }, 
+        "NatGatewayEIPAllocationId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "NatGatewayEIP", 
+                    "AllocationId"
+                ]
+            }
+        }, 
+        "NatGatewayId": {
+            "Value": {
+                "Ref": "NatGateway"
+            }
+        }, 
+        "NetworkAssociationId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Subnet", 
+                    "NetworkAssociationId"
+                ]
+            }
+        }, 
+        "NetworkType": {
+            "Value": "public"
+        }, 
+        "RouteTableId": {
+            "Value": {
+                "Ref": "RouteTable"
+            }
+        }, 
+        "SubnetId": {
+            "Value": {
+                "Ref": "Subnet"
+            }
+        }, 
+        "SubnetRouteTableAssociationId": {
+            "Value": {
+                "Ref": "SubnetRouteTableAssociation"
+            }
+        }, 
+        "VpcId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Subnet", 
+                    "VpcId"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "DefaultRoute": {
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0", 
+                "GatewayId": "igw-abc1234z", 
+                "NatGatewayId": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "RouteTableId": {
+                    "Ref": "RouteTable"
+                }
+            }, 
+            "Type": "AWS::EC2::Route"
+        }, 
+        "NatGateway": {
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "NatGatewayEIP", 
+                        "AllocationId"
+                    ]
+                }, 
+                "SubnetId": {
+                    "Ref": "Subnet"
+                }
+            }, 
+            "Type": "AWS::EC2::NatGateway"
+        }, 
+        "NatGatewayEIP": {
+            "Properties": {
+                "Domain": "vpc"
+            }, 
+            "Type": "AWS::EC2::EIP"
+        }, 
+        "RouteTable": {
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "NetworkType", 
+                        "Value": "public"
+                    }
+                ], 
+                "VpcId": "vpc-abc1234"
+            }, 
+            "Type": "AWS::EC2::RouteTable"
+        }, 
+        "Subnet": {
+            "Properties": {
+                "AvailabilityZone": "us-east-1a", 
+                "CidrBlock": "10.0.0.0/24", 
+                "Tags": [
+                    {
+                        "Key": "NetworkType", 
+                        "Value": "public"
+                    }
+                ], 
+                "VpcId": "vpc-abc1234"
+            }, 
+            "Type": "AWS::EC2::Subnet"
+        }, 
+        "SubnetRouteTableAssociation": {
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "RouteTable"
+                }, 
+                "SubnetId": {
+                    "Ref": "Subnet"
+                }
+            }, 
+            "Type": "AWS::EC2::SubnetRouteTableAssociation"
+        }
+    }
+}

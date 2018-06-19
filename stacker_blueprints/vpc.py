@@ -422,11 +422,21 @@ class VPC2(Blueprint):
         t.add_output(Output("VpcId", Value=self.vpc.Ref()))
 
         attrs = [
-            "CidrBlock", "CidrBlockAssociations", "DefaultNetworkAcl",
-            "DefaultSecurityGroup", "Ipv6CidrBlocks"
+            "CidrBlock", "DefaultNetworkAcl", "DefaultSecurityGroup",
         ]
+
         for attr in attrs:
             t.add_output(Output(attr, Value=self.vpc.GetAtt(attr)))
+
+        list_attrs = ["CidrBlockAssociations", "Ipv6CidrBlocks"]
+
+        for attr in list_attrs:
+            t.add_output(
+                Output(
+                    attr,
+                    Value=Join(",", self.vpc.GetAtt(attr))
+                )
+            )
 
     def create_internet_gateway(self):
         t = self.template

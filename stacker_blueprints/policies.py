@@ -16,12 +16,14 @@ from troposphere import (
 
 from awacs import (
     awslambda,
-    sts,
-    s3,
-    logs,
-    ec2,
-    dynamodb,
     cloudwatch,
+    dynamodb,
+    ecr,
+    kinesis,
+    ec2,
+    logs,
+    s3,
+    sts,
 )
 
 
@@ -141,6 +143,53 @@ def static_website_bucket_policy(bucket):
     )
 
 
+def read_only_kinesis_stream_policy_statements(stream_arns):
+    return [
+        Statement(
+            Effect=Allow,
+            Action=[
+                kinesis.DescribeStream,
+                kinesis.Action("Get*"),
+            ],
+            Resource=stream_arns
+        ),
+        Statement(
+            Effect=Allow,
+            Action=[kinesis.ListStreams],
+            Resource=['*']
+        ),
+    ]
+
+
+def read_write_kinesis_stream_policy_statements(stream_arns):
+    statements = [
+        Statement(
+            Effect=Allow,
+            Action=[
+                kinesis.PutRecord,
+                kinesis.PutRecords,
+            ],
+            Resource=stream_arns
+        ),
+    ]
+    return read_only_kinesis_stream_policy_statements(stream_arns) + statements
+
+
+def read_only_kinesis_stream_policy(stream_arns):
+    return Policy(Statement=read_only_kinesis_stream_policy_statements(
+        stream_arns))
+
+
+def read_write_kinesis_stream_policy(stream_arns):
+    return Policy(Statement=read_write_kinesis_stream_policy_statements(
+        stream_arns))
+
+
+def kinesis_stream_arn(stream_id):
+    return Sub("arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:"
+               "stream/${Stream}", Stream=stream_id)
+
+
 def log_stream_arn(log_group_name, log_stream_name):
     return Join(
         '',
@@ -169,13 +218,19 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
     )
 
 
-def cloudwatch_logs_write_statements(log_group=None):
+def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
     statements = []
+    if not log_stream_prefix:
+        log_stream_prefix = "*"
     if log_group:
         log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
                            ":log-group:", log_group]
         log_group_arn = Join("", log_group_parts)
-        log_stream_wild = Join("", log_group_parts + [":*"])
+        log_stream_wild = Join(
+            "",
+            log_group_parts + [":" + log_stream_prefix]
+        )
+
         resources = [log_group_arn, log_stream_wild]
 
         statements.append(
@@ -280,4 +335,48 @@ def dynamodb_autoscaling_policy(tables):
                 ]
             ),
         ]
+    )
+
+
+def ecr_repo_client_statements(ecr_repo="*"):
+    statements = []
+    statements.append(
+        Statement(
+            Effect=Allow,
+            Resource=["*"],
+            Action=[ecr.GetAuthorizationToken, ]
+        )
+    )
+
+    statements.append(
+        Statement(
+            Effect=Allow,
+            Resource=[ecr_repo],
+            Action=[
+                ecr.BatchCheckLayerAvailability,
+                ecr.GetDownloadUrlForLayer,
+                ecr.BatchGetImage,
+            ]
+        )
+    )
+
+    return statements
+
+
+def ecs_task_execution_statements(ecr_repo="*", log_group=None,
+                                  log_stream_prefix=None):
+    statements = ecr_repo_client_statements(ecr_repo)
+    if log_group:
+        statements.extend(
+            cloudwatch_logs_write_statements(log_group, log_stream_prefix)
+        )
+    return statements
+
+
+def ecs_task_execution_policy(ecr_repo="*", log_group=None,
+                              log_stream_prefix=None):
+    return Policy(
+        Statement=ecs_task_execution_statements(
+            ecr_repo, log_group, log_stream_prefix
+        )
     )
