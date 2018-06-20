@@ -34,18 +34,15 @@ class PolicyTestCase(StackerTestCase):
         self.assertRendered(policy.to_dict(), expected_output)
 
     def assertStatementsRendered(self, statements):
-
         policy = Policy(
             Statement=statements,
         )
-
         self.assertPolicyRendered(policy, caller())
 
 
 class TestPolicies(PolicyTestCase):
 
     def test_cloudwatch_logs_write_statements(self):
-
         self.assertStatementsRendered(
             cloudwatch_logs_write_statements('group', 'stream')
         )
