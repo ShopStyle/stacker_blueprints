@@ -9,6 +9,7 @@ from stacker_blueprints.policies import (
     cloudwatch_logs_write_statements,
     lambda_basic_execution_statements,
     lambda_basic_execution_policy,
+    lambda_edge_execution_statements,
 )
 
 
@@ -57,6 +58,11 @@ class TestPolicies(PolicyTestCase):
     def test_lambda_basic_execution_policy(self):
         self.assertPolicyRendered(
             lambda_basic_execution_policy('myfunction')
+        )
+
+    def test_lambda_edge_execution_statements(self):
+        self.assertStatementsRendered(
+            lambda_edge_execution_statements('myfunction')
         )
 
 
