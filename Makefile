@@ -1,3 +1,10 @@
 test:
 	flake8 stacker_blueprints
-	python setup.py test
+	nosetests \
+		--with-coverage \
+		--cover-html \
+		--cover-package=stacker_blueprints \
+		--cover-erase \
+		--cover-branches \
+		--cover-inclusive
+		# ./tests
