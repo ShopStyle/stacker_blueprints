@@ -1,18 +1,21 @@
 import pprint  # noqa
 
+from awacs.aws import Allow, Statement
+from awacs import ecr, logs
+
 from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
 
-from blueprints import iam_roles
+from stacker_blueprints import iam_roles
 
 
-class TestMicroServiceIamRoleBlueprint(BlueprintTestCase):
+class TestIamRolesBlueprint(BlueprintTestCase):
 
     def setUp(self):
         self.common_variables = {
-            'Name': 'my-policy',
-            'EC2Roles': [
-                'test-role'
+            'Name': 'myTest',
+            'Ec2Roles': [
+                'testrole'
             ]
         }
         self.ctx = Context({
@@ -21,7 +24,26 @@ class TestMicroServiceIamRoleBlueprint(BlueprintTestCase):
         })
 
     def create_blueprint(self, name):
-        return iam_roles.MicroServiceRole(name, self.ctx)
+        class TestRole(iam_roles.Roles):
+            def generate_policy_statements(self):
+                return [
+                    Statement(
+                        Effect=Allow,
+                        Resource=["arn:aws:logs:*:*:*"],
+                        Action=[
+                            logs.CreateLogGroup,
+                            logs.CreateLogStream,
+                            logs.PutLogEvents
+                        ]
+                    ),
+                    Statement(
+                        Effect=Allow,
+                        Resource=["*"],
+                        Action=[ecr.GetAuthorizationToken, ]
+                    )
+                ]
+
+        return TestRole(name, self.ctx)
 
     def test_create_template(self):
         blueprint = self.create_blueprint(
@@ -29,7 +51,6 @@ class TestMicroServiceIamRoleBlueprint(BlueprintTestCase):
         )
 
         blueprint.resolve_variables(self.generate_variables())
-        # blueprint.context.config.namespace = "test"
         blueprint.create_template()
 
         self.assertRenderedBlueprint(blueprint)

@@ -99,6 +99,7 @@ class Roles(Blueprint):
             Output(name + "PolicyName", Value=Ref(policy))
         )
         self.policies.append(policy)
+        return policy
 
     def create_template(self):
         variables = self.get_variables()
