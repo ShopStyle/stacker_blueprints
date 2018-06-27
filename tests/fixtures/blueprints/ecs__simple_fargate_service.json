@@ -75,7 +75,7 @@
                                 "Value": "sql://fake_db/fake_db"
                             }
                         ], 
-                        "Essential": "true", 
+                        "Essential": true, 
                         "Image": "fake_repo/image:12345", 
                         "LogConfiguration": {
                             "Ref": "AWS::NoValue"
