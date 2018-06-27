@@ -1,0 +1,22 @@
+{
+    "Outputs": {
+        "ClusterArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Cluster", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "ClusterId": {
+            "Value": {
+                "Ref": "Cluster"
+            }
+        }
+    }, 
+    "Resources": {
+        "Cluster": {
+            "Type": "AWS::ECS::Cluster"
+        }
+    }
+}

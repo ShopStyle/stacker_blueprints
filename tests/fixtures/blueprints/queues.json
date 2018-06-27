@@ -8,6 +8,14 @@
                 ]
             }
         }, 
+        "FifoName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Fifo", 
+                    "QueueName"
+                ]
+            }
+        }, 
         "FifoUrl": {
             "Value": {
                 "Ref": "Fifo"
@@ -21,6 +29,14 @@
                 ]
             }
         }, 
+        "RedrivePolicyName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "RedrivePolicy", 
+                    "QueueName"
+                ]
+            }
+        }, 
         "RedrivePolicyUrl": {
             "Value": {
                 "Ref": "RedrivePolicy"
@@ -31,6 +47,14 @@
                 "Fn::GetAtt": [
                     "Simple", 
                     "Arn"
+                ]
+            }
+        }, 
+        "SimpleName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Simple", 
+                    "QueueName"
                 ]
             }
         }, 

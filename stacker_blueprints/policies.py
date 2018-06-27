@@ -217,9 +217,11 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
     )
 
 
-def cloudwatch_logs_resources(log_group=None, log_stream_prefix=None):
-    if not log_stream_prefix:
-        log_stream_prefix = "*"
+def cloudwatch_logs_resources(log_group=None, log_stream=None):
+    if log_stream:
+        log_stream = "log_stream:%s" % log_stream
+    else:
+        log_stream = "*"
     resources = ["arn:aws:logs:*:*:*"]
     if log_group:
         log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
@@ -227,7 +229,7 @@ def cloudwatch_logs_resources(log_group=None, log_stream_prefix=None):
         log_group_arn = Join("", log_group_parts)
         log_stream_wild = Join(
             "",
-            log_group_parts + [":" + log_stream_prefix]
+            log_group_parts + [":" + log_stream]
         )
 
         resources = [log_group_arn, log_stream_wild]
@@ -370,19 +372,19 @@ def ecr_repo_client_statements(ecr_repo="*"):
 
 
 def ecs_task_execution_statements(ecr_repo="*", log_group=None,
-                                  log_stream_prefix=None):
+                                  log_stream=None):
     statements = ecr_repo_client_statements(ecr_repo)
     if log_group:
         statements.extend(
-            cloudwatch_logs_write_statements(log_group, log_stream_prefix)
+            cloudwatch_logs_write_statements(log_group, log_stream)
         )
     return statements
 
 
 def ecs_task_execution_policy(ecr_repo="*", log_group=None,
-                              log_stream_prefix=None):
+                              log_stream=None):
     return Policy(
         Statement=ecs_task_execution_statements(
-            ecr_repo, log_group, log_stream_prefix
+            ecr_repo, log_group, log_stream
         )
     )

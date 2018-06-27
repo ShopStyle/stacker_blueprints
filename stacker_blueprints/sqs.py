@@ -3,8 +3,6 @@ from stacker.blueprints.variables.types import TroposphereType
 
 from troposphere import (
     sqs,
-    Ref,
-    GetAtt,
     Output,
 )
 
@@ -26,6 +24,9 @@ class Queues(Blueprint):
         for queue in variables["Queues"]:
             t.add_resource(queue)
             t.add_output(
-                Output(queue.title + "Arn", Value=GetAtt(queue, "Arn"))
+                Output(queue.title + "Arn", Value=queue.GetAtt("Arn"))
             )
-            t.add_output(Output(queue.title + "Url", Value=Ref(queue)))
+            t.add_output(
+                Output(queue.title + "Name", Value=queue.GetAtt("QueueName"))
+            )
+            t.add_output(Output(queue.title + "Url", Value=queue.Ref()))
