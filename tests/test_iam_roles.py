@@ -1,5 +1,3 @@
-import pprint  # noqa
-
 from awacs.aws import Allow, Statement
 from awacs import ecr, logs
 
