@@ -19,7 +19,8 @@ class Roles(Blueprint):
     VARIABLES = {
         "Name": {
             "type": str,
-            "description": "names of the policy",
+            "description": "Name of the policy",
+            "default": "this",
         },
         "Ec2Roles": {
             "type": list,
