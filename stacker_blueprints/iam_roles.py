@@ -17,7 +17,7 @@ from awacs.helpers.trust import (
 
 class Roles(Blueprint):
     VARIABLES = {
-        "Name": {
+        "PolicyName": {
             "type": str,
             "description": "Name of the policy",
             "default": "this",
@@ -111,4 +111,4 @@ class Roles(Blueprint):
         for role in variables['LambdaRoles']:
             self.create_lambda_role(role)
 
-        self.create_policy(variables['Name'])
+        self.create_policy(variables['PolicyName'])

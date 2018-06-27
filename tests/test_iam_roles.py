@@ -11,7 +11,7 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
     def setUp(self):
         self.common_variables = {
-            'Name': 'myTest',
+            'PolicyName': 'myTest',
             'Ec2Roles': [
                 'testrole'
             ]
