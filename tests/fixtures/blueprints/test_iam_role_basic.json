@@ -1,0 +1,81 @@
+{
+    "Outputs": {
+        "PolicyName": {
+            "Value": {
+                "Ref": "Policy"
+            }
+        }, 
+        "testroleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "testrole", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "testroleRoleName": {
+            "Value": {
+                "Ref": "testrole"
+            }
+        }
+    }, 
+    "Resources": {
+        "Policy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "arn:aws:logs:*:*:*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "testrole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "testrole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

@@ -73,7 +73,7 @@ class Roles(Blueprint):
 
         return []
 
-    def create_policy(self, name):
+    def create_policy(self):
         statements = self.generate_policy_statements()
         if not statements:
             return
@@ -82,8 +82,8 @@ class Roles(Blueprint):
 
         policy = t.add_resource(
             iam.PolicyType(
-                "{}Policy".format(name),
-                PolicyName=Sub("${AWS::StackName}-${Name}-policy", Name=name),
+                "Policy",
+                PolicyName=Sub("${AWS::StackName}-policy"),
                 PolicyDocument=Policy(
                     Statement=statements,
                 ),
@@ -92,9 +92,10 @@ class Roles(Blueprint):
         )
 
         t.add_output(
-            Output(name + "PolicyName", Value=Ref(policy))
+            Output("PolicyName", Value=Ref(policy))
         )
         self.policies.append(policy)
+        return policy
 
     def create_template(self):
         variables = self.get_variables()
