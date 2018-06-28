@@ -11,12 +11,7 @@ from stacker_blueprints import iam_roles
 class TestIamRolesBlueprint(BlueprintTestCase):
 
     def setUp(self):
-        self.common_variables = {
-            'PolicyName': 'myTest',
-            'Ec2Roles': [
-                'testrole'
-            ]
-        }
+        self.common_variables = {}
         self.ctx = Context({
             'namespace': 'test',
             'environment': 'test',
@@ -31,7 +26,7 @@ class TestIamRolesBlueprint(BlueprintTestCase):
                 return [
                     Statement(
                         Effect=Allow,
-                        Resource=["arn:aws:logs:*:*:*"],
+                        Resource=logs.ARN('*', '*', '*'),
                         Action=[
                             logs.CreateLogGroup,
                             logs.CreateLogStream,
@@ -40,19 +35,54 @@ class TestIamRolesBlueprint(BlueprintTestCase):
                     ),
                     Statement(
                         Effect=Allow,
-                        Resource=["*"],
+                        Resource=['*'],
                         Action=[ecr.GetAuthorizationToken, ]
                     )
                 ]
 
         return TestRole(name, self.ctx)
 
-    def test_create_template(self):
-        blueprint = self.create_blueprint(
-            "test_iam_role_basic"
-        )
-
+    def test_ec2_role(self):
+        self.common_variables = {
+            'PolicyName': 'myTest',
+            'Ec2Roles': [
+                'ec2role'
+            ]
+        }
+        blueprint = self.create_blueprint('test_iam_role_ec2')
         blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
 
+    def test_lambda_role(self):
+        self.common_variables = {
+            'PolicyName': 'myTest',
+            'LambdaRoles': [
+                'lambdarole'
+            ]
+        }
+        blueprint = self.create_blueprint('test_iam_role_lambda')
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_attached_polcies(self):
+        self.common_variables = {
+            'PolicyName': 'myTest',
+            'Ec2Roles': [
+                'ec2role'
+            ],
+            'AttachedPolicies': [
+                'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+            ],
+        }
+        blueprint = self.create_blueprint('test_iam_role_attached_polcies')
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_empty(self):
+        blueprint = self.create_blueprint('test_iam_role_empty')
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)

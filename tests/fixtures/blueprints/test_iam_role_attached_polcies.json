@@ -5,17 +5,17 @@
                 "Ref": "Policy"
             }
         }, 
-        "testroleRoleArn": {
+        "ec2roleRoleArn": {
             "Value": {
                 "Fn::GetAtt": [
-                    "testrole", 
+                    "ec2role", 
                     "Arn"
                 ]
             }
         }, 
-        "testroleRoleName": {
+        "ec2roleRoleName": {
             "Value": {
-                "Ref": "testrole"
+                "Ref": "ec2role"
             }
         }
     }, 
@@ -31,9 +31,7 @@
                                 "logs:PutLogEvents"
                             ], 
                             "Effect": "Allow", 
-                            "Resource": [
-                                "arn:aws:logs:*:*:*"
-                            ]
+                            "Resource": "arn:aws:logs:*:*:*"
                         }, 
                         {
                             "Action": [
@@ -51,13 +49,13 @@
                 }, 
                 "Roles": [
                     {
-                        "Ref": "testrole"
+                        "Ref": "ec2role"
                     }
                 ]
             }, 
             "Type": "AWS::IAM::Policy"
         }, 
-        "testrole": {
+        "ec2role": {
             "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Statement": [
@@ -73,7 +71,10 @@
                             }
                         }
                     ]
-                }
+                }, 
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+                ]
             }, 
             "Type": "AWS::IAM::Role"
         }
