@@ -1,5 +1,10 @@
 {
     "Outputs": {
+        "PolicyName": {
+            "Value": {
+                "Ref": "Policy"
+            }
+        }, 
         "lambdaroleRoleArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -12,35 +17,10 @@
             "Value": {
                 "Ref": "lambdarole"
             }
-        }, 
-        "myTestPolicyName": {
-            "Value": {
-                "Ref": "myTestPolicy"
-            }
         }
     }, 
     "Resources": {
-        "lambdarole": {
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ], 
-                            "Effect": "Allow", 
-                            "Principal": {
-                                "Service": [
-                                    "lambda.amazonaws.com"
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }, 
-            "Type": "AWS::IAM::Role"
-        }, 
-        "myTestPolicy": {
+        "Policy": {
             "Properties": {
                 "PolicyDocument": {
                     "Statement": [
@@ -65,12 +45,7 @@
                     ]
                 }, 
                 "PolicyName": {
-                    "Fn::Sub": [
-                        "${AWS::StackName}-${Name}-policy", 
-                        {
-                            "Name": "myTest"
-                        }
-                    ]
+                    "Fn::Sub": "${AWS::StackName}-policy"
                 }, 
                 "Roles": [
                     {
@@ -79,6 +54,26 @@
                 ]
             }, 
             "Type": "AWS::IAM::Policy"
+        }, 
+        "lambdarole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
         }
     }
 }

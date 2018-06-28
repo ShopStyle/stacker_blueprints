@@ -1,5 +1,10 @@
 {
     "Outputs": {
+        "PolicyName": {
+            "Value": {
+                "Ref": "Policy"
+            }
+        }, 
         "ec2roleRoleArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -12,38 +17,10 @@
             "Value": {
                 "Ref": "ec2role"
             }
-        }, 
-        "myTestPolicyName": {
-            "Value": {
-                "Ref": "myTestPolicy"
-            }
         }
     }, 
     "Resources": {
-        "ec2role": {
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Statement": [
-                        {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ], 
-                            "Effect": "Allow", 
-                            "Principal": {
-                                "Service": [
-                                    "ec2.amazonaws.com"
-                                ]
-                            }
-                        }
-                    ]
-                }, 
-                "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
-                ]
-            }, 
-            "Type": "AWS::IAM::Role"
-        }, 
-        "myTestPolicy": {
+        "Policy": {
             "Properties": {
                 "PolicyDocument": {
                     "Statement": [
@@ -68,12 +45,7 @@
                     ]
                 }, 
                 "PolicyName": {
-                    "Fn::Sub": [
-                        "${AWS::StackName}-${Name}-policy", 
-                        {
-                            "Name": "myTest"
-                        }
-                    ]
+                    "Fn::Sub": "${AWS::StackName}-policy"
                 }, 
                 "Roles": [
                     {
@@ -82,6 +54,29 @@
                 ]
             }, 
             "Type": "AWS::IAM::Policy"
+        }, 
+        "ec2role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }, 
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+                ]
+            }, 
+            "Type": "AWS::IAM::Role"
         }
     }
 }

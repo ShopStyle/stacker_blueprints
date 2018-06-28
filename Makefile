@@ -6,7 +6,7 @@ lint:
 	flake8 stacker_blueprints
 
 test:
-	nosetests \
+	python setup.py nosetests \
 		--with-coverage \
 		--cover-html \
 		--cover-package=stacker_blueprints \
