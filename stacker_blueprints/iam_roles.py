@@ -125,6 +125,6 @@ class Roles(Blueprint):
             created = True
 
         if not created:
-            InvalidConfig("No roles are defined")
+            raise InvalidConfig("No roles are defined")
 
         self.create_policy()

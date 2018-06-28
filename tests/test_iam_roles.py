@@ -3,6 +3,7 @@ from awacs import ecr, logs
 
 from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
+from stacker.exceptions import InvalidConfig
 from stacker.variables import Variable
 
 from stacker_blueprints import iam_roles
@@ -84,5 +85,5 @@ class TestIamRolesBlueprint(BlueprintTestCase):
     def test_empty(self):
         blueprint = self.create_blueprint('test_iam_role_empty')
         blueprint.resolve_variables(self.generate_variables())
-        blueprint.create_template()
-        self.assertRenderedBlueprint(blueprint)
+        with self.assertRaises(InvalidConfig):
+            blueprint.create_template()
