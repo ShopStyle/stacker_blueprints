@@ -20,7 +20,7 @@ class Roles(Blueprint):
     VARIABLES = {
         "AttachedPolicies": {
             "type": list,
-            "description": "List of ARNs of policies to attachg",
+            "description": "List of ARNs of policies to attach",
             "default": [],
         },
         "Ec2Roles": {
