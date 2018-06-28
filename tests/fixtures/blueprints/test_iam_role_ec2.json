@@ -1,0 +1,84 @@
+{
+    "Outputs": {
+        "ec2roleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ec2role", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "ec2roleRoleName": {
+            "Value": {
+                "Ref": "ec2role"
+            }
+        }, 
+        "myTestPolicyName": {
+            "Value": {
+                "Ref": "myTestPolicy"
+            }
+        }
+    }, 
+    "Resources": {
+        "ec2role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "myTestPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": [
+                        "${AWS::StackName}-${Name}-policy", 
+                        {
+                            "Name": "myTest"
+                        }
+                    ]
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "ec2role"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }
+    }
+}
