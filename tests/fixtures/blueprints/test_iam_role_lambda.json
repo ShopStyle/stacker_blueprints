@@ -1,0 +1,84 @@
+{
+    "Outputs": {
+        "lambdaroleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "lambdarole", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "lambdaroleRoleName": {
+            "Value": {
+                "Ref": "lambdarole"
+            }
+        }, 
+        "myTestPolicyName": {
+            "Value": {
+                "Ref": "myTestPolicy"
+            }
+        }
+    }, 
+    "Resources": {
+        "lambdarole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "myTestPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": [
+                        "${AWS::StackName}-${Name}-policy", 
+                        {
+                            "Name": "myTest"
+                        }
+                    ]
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "lambdarole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }
+    }
+}

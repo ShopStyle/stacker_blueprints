@@ -236,14 +236,14 @@ def cloudwatch_logs_resources(log_group=None, log_stream=None):
     return resources
 
 
-def cloudwatch_logs_write_statements(log_group=None, log_stream_prefix=None):
+def cloudwatch_logs_write_statements(log_group=None, log_stream=None):
 
     return [
         Statement(
             Effect=Allow,
             Resource=cloudwatch_logs_resources(
                 log_group=log_group,
-                log_stream_prefix=log_stream_prefix,
+                log_stream=log_stream,
             ),
             Action=[
                 logs.CreateLogGroup,

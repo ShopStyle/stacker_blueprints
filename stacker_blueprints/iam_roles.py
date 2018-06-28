@@ -1,4 +1,5 @@
 from stacker.blueprints.base import Blueprint
+from stacker.exceptions import InvalidConfig
 
 from troposphere import (
     GetAtt,
@@ -22,6 +23,11 @@ class Roles(Blueprint):
             "description": "Name of the policy",
             "default": "this",
         },
+        "AttachedPolicies": {
+            "type": list,
+            "description": "List of ARNs of policies to attachg",
+            "default": [],
+        },
         "Ec2Roles": {
             "type": list,
             "description": "names of ec2 roles to create",
@@ -41,11 +47,20 @@ class Roles(Blueprint):
 
     def create_role(self, name, assumerole_policy):
         t = self.template
+        v = self.get_variables()
+
+        role_kwargs = {
+            'AssumeRolePolicyDocument': assumerole_policy,
+        }
+
+        attached_policies = v['AttachedPolicies']
+        if attached_policies and len(attached_policies):
+            role_kwargs['ManagedPolicyArns'] = attached_policies
 
         role = t.add_resource(
             iam.Role(
                 name,
-                AssumeRolePolicyDocument=assumerole_policy,
+                **role_kwargs
             )
         )
 
@@ -104,11 +119,17 @@ class Roles(Blueprint):
 
     def create_template(self):
         variables = self.get_variables()
+        created = False
 
         for role in variables['Ec2Roles']:
             self.create_ec2_role(role)
+            created = True
 
         for role in variables['LambdaRoles']:
             self.create_lambda_role(role)
+            created = True
+
+        if not created:
+            InvalidConfig("No roles are defined")
 
         self.create_policy(variables['PolicyName'])

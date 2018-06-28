@@ -1,0 +1,47 @@
+{
+    "Outputs": {
+        "thisPolicyName": {
+            "Value": {
+                "Ref": "thisPolicy"
+            }
+        }
+    }, 
+    "Resources": {
+        "thisPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": [
+                        "${AWS::StackName}-${Name}-policy", 
+                        {
+                            "Name": "this"
+                        }
+                    ]
+                }, 
+                "Roles": []
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }
+    }
+}

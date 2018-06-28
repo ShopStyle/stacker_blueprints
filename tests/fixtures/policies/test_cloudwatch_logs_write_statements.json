@@ -40,7 +40,7 @@
                                 }, 
                                 ":log-group:", 
                                 "group", 
-                                ":stream"
+                                ":log_stream:stream"
                             ]
                         ]
                     }
