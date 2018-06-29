@@ -23,10 +23,20 @@ class Roles(Blueprint):
             "description": "List of ARNs of policies to attach",
             "default": [],
         },
+        "Path": {
+            "type": str,
+            "description": "Provide the path",
+            "default": "",
+        },
         "Ec2Roles": {
             "type": list,
             "description": "names of ec2 roles to create",
             "default": [],
+        },
+        "InstanceProfile": {
+            "type": bool,
+            "description": "The role is an instance profile.",
+            "default": False,
         },
         "LambdaRoles": {
             "type": list,
@@ -52,6 +62,10 @@ class Roles(Blueprint):
         if attached_policies and len(attached_policies):
             role_kwargs['ManagedPolicyArns'] = attached_policies
 
+        path = v['Path']
+        if path:
+            role_kwargs['Path'] = path
+
         role = t.add_resource(
             iam.Role(
                 name,
@@ -62,9 +76,35 @@ class Roles(Blueprint):
         t.add_output(
             Output(name + "RoleName", Value=Ref(role))
         )
+
         t.add_output(
             Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
         )
+
+        if v['InstanceProfile']:
+            profile_kwargs = {
+                'Roles': [
+                    Ref(role),
+                ],
+            }
+
+            if path:
+                profile_kwargs['Path'] = path
+
+            instance_profile = t.add_resource(
+                iam.InstanceProfile(
+                    name + 'InstanceProfile',
+                    **profile_kwargs
+                )
+            )
+
+            t.add_output(
+                Output("InstanceProfileName", Value=Ref(instance_profile))
+            )
+
+            t.add_output(
+                Output("InstanceProfileArn", Value=GetAtt(instance_profile.title, "Arn"))
+            )
 
         self.roles.append(role)
         return role
