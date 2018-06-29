@@ -18,6 +18,11 @@ from awacs.helpers.trust import (
 
 class Roles(Blueprint):
     VARIABLES = {
+        "AttachedPolicies": {
+            "type": list,
+            "description": "List of ARNs of policies to attach",
+            "default": [],
+        },
         "Ec2Roles": {
             "type": list,
             "description": "names of ec2 roles to create",
@@ -37,11 +42,20 @@ class Roles(Blueprint):
 
     def create_role(self, name, assumerole_policy):
         t = self.template
+        v = self.get_variables()
+
+        role_kwargs = {
+            'AssumeRolePolicyDocument': assumerole_policy,
+        }
+
+        attached_policies = v['AttachedPolicies']
+        if attached_policies and len(attached_policies):
+            role_kwargs['ManagedPolicyArns'] = attached_policies
 
         role = t.add_resource(
             iam.Role(
                 name,
-                AssumeRolePolicyDocument=assumerole_policy,
+                **role_kwargs
             )
         )
 
