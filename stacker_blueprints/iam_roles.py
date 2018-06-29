@@ -1,4 +1,5 @@
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import TroposphereType
 from stacker.exceptions import InvalidConfig
 
 from troposphere import (
@@ -21,6 +22,11 @@ class Roles(Blueprint):
         "AttachedPolicies": {
             "type": list,
             "description": "List of ARNs of policies to attach",
+            "default": [],
+        },
+        "InlinePolicies": {
+            "type":  list,
+            "description": "List of inline policies",
             "default": [],
         },
         "Ec2Roles": {
@@ -89,7 +95,10 @@ class Roles(Blueprint):
         return []
 
     def create_policy(self):
-        statements = self.generate_policy_statements()
+        v = self.get_variables()
+
+        statements = v['InlineStatements']
+        statements.extend(self.generate_policy_statements())
         if not statements:
             return
 

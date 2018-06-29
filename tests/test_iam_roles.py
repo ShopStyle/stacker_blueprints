@@ -45,7 +45,6 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
     def test_ec2_role(self):
         self.common_variables = {
-            'PolicyName': 'myTest',
             'Ec2Roles': [
                 'ec2role'
             ]
@@ -57,7 +56,6 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
     def test_lambda_role(self):
         self.common_variables = {
-            'PolicyName': 'myTest',
             'LambdaRoles': [
                 'lambdarole'
             ]
@@ -69,13 +67,36 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
     def test_attached_polcies(self):
         self.common_variables = {
-            'PolicyName': 'myTest',
             'Ec2Roles': [
                 'ec2role'
             ],
             'AttachedPolicies': [
                 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
             ],
+        }
+        blueprint = self.create_blueprint('test_iam_role_attached_polcies')
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_inline_polcies(self):
+        self.common_variables = {
+            'Ec2Roles': [
+                'ec2role'
+            ],
+            'InlinePolicies': [{
+                'Effect': 'Allow',
+                'Action': [
+                    'sqs:GetQueueAttributes',
+                    'sqs:GetQueueUrl',
+                    'sqs:ListQueues',
+                    'sqs:SendMessage',
+                    'sqs:SendMessageBatch',
+                ],
+                'Resource': [
+                    "arn:aws:sqs:us-east-1:810605503585:dev-delivery-engine"
+                ],
+            }],
         }
         blueprint = self.create_blueprint('test_iam_role_attached_polcies')
         blueprint.resolve_variables(self.generate_variables())
