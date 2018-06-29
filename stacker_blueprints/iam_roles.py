@@ -1,4 +1,5 @@
 from stacker.blueprints.base import Blueprint
+from stacker.exceptions import InvalidConfig
 
 from troposphere import (
     GetAtt,
@@ -15,7 +16,163 @@ from awacs.helpers.trust import (
 )
 
 
-class Roles(Blueprint):
+class RoleCommon(object):
+
+    def create_role(self, name, policy):
+        raise NotImplemented
+
+    def create_ec2_role(self, name):
+        return self.create_role(name, get_default_assumerole_policy())
+
+    def create_lambda_role(self, name):
+        return self.create_role(name, get_lambda_assumerole_policy())
+
+    def generate_policy_statements(self):
+        """Should be overridden on a subclass to create policy statements.
+
+        By subclassing this blueprint, and overriding this method to generate
+        a list of :class:`awacs.aws.Statement` types, a
+        :class:`troposphere.iam.PolicyType` will be created and attached to
+        the roles specified here.
+
+        If not specified, no Policy will be created.
+        """
+
+        return []
+
+    def create_policy(self, name=None):
+        statements = self.generate_policy_statements()
+        if not statements:
+            return
+
+        t = self.template
+
+        logical_name = "Policy"
+        if name:
+            logical_name += name
+
+        policy = t.add_resource(
+            iam.PolicyType(
+                "Policy",
+                PolicyName=Sub("${AWS::StackName}-policy"),
+                PolicyDocument=Policy(
+                    Statement=statements,
+                ),
+                Roles=[Ref(role) for role in self.roles],
+            )
+        )
+
+        t.add_output(
+            Output("PolicyName", Value=Ref(policy))
+        )
+        self.policies.append(policy)
+        return policy
+
+
+class Ec2Role(Blueprint, RoleCommon):
+    """
+    Blueprint to create an Ec2 role.
+
+    - class_path: stacker_blueprints.iam_roles.Ec2Role
+      name: my-role
+        variables:
+          AttachedPolicies:
+          - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+          InstanceProfile: True
+          Name: myRole
+          Path: /
+    """
+    VARIABLES = {
+        "AttachedPolicies": {
+            "type": list,
+            "description": "List of ARNs of policies to attach",
+            "default": [],
+        },
+        "InstanceProfile": {
+            "type": bool,
+            "description": "The role is an instance profile.",
+            "default": False,
+        },
+        "Name": {
+            "type": str,
+            "description": "The name of the role",
+        },
+        "Path": {
+            "type": str,
+            "description": "Provide the path",
+            "default": "",
+        },
+    }
+
+    def create_role(self, name, assumerole_policy):
+        t = self.template
+        v = self.get_variables()
+
+        role_kwargs = {
+            'AssumeRolePolicyDocument': assumerole_policy,
+        }
+
+        attached_policies = v['AttachedPolicies']
+        if attached_policies:
+            role_kwargs['ManagedPolicyArns'] = attached_policies
+
+        path = v['Path']
+        if path:
+            role_kwargs['Path'] = path
+
+        role = t.add_resource(
+            iam.Role(
+                name,
+                **role_kwargs
+            )
+        )
+
+        t.add_output(
+            Output(name + "RoleName", Value=Ref(role))
+        )
+
+        t.add_output(
+            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
+        )
+
+        if v['InstanceProfile']:
+            profile_kwargs = {
+                'Roles': [
+                    Ref(role),
+                ],
+            }
+
+            if path:
+                profile_kwargs['Path'] = path
+
+            instance_profile = t.add_resource(
+                iam.InstanceProfile(
+                    name + 'InstanceProfile',
+                    **profile_kwargs
+                )
+            )
+
+            t.add_output(
+                Output("InstanceProfileName", Value=Ref(instance_profile))
+            )
+
+            t.add_output(
+                Output("InstanceProfileArn", Value=GetAtt(instance_profile.title, "Arn"))
+            )
+
+        self.roles.append(role)
+        return role
+
+    def create_template(self):
+        v = self.get_variables()
+        role = self.create_ec2_role(v["Name"])
+        self.create_policy()
+
+
+class Roles(Blueprint, RoleCommon):
+    """
+    Blueprint to create many Ec2 and Lambda roles.
+    """
     VARIABLES = {
         "Ec2Roles": {
             "type": list,
@@ -53,48 +210,6 @@ class Roles(Blueprint):
 
         self.roles.append(role)
         return role
-
-    def create_ec2_role(self, name):
-        return self.create_role(name, get_default_assumerole_policy())
-
-    def create_lambda_role(self, name):
-        return self.create_role(name, get_lambda_assumerole_policy())
-
-    def generate_policy_statements(self):
-        """Should be overridden on a subclass to create policy statements.
-
-        By subclassing this blueprint, and overriding this method to generate
-        a list of :class:`awacs.aws.Statement` types, a
-        :class:`troposphere.iam.PolicyType` will be created and attached to
-        the roles specified here.
-
-        If not specified, no Policy will be created.
-        """
-
-        return []
-
-    def create_policy(self, name):
-        statements = self.generate_policy_statements()
-        if not statements:
-            return
-
-        t = self.template
-
-        policy = t.add_resource(
-            iam.PolicyType(
-                "{}Policy".format(name),
-                PolicyName=Sub("${AWS::StackName}-${Name}-policy", Name=name),
-                PolicyDocument=Policy(
-                    Statement=statements,
-                ),
-                Roles=[Ref(role) for role in self.roles],
-            )
-        )
-
-        t.add_output(
-            Output(name + "PolicyName", Value=Ref(policy))
-        )
-        self.policies.append(policy)
 
     def create_template(self):
         variables = self.get_variables()
