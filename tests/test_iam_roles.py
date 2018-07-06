@@ -67,6 +67,7 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
     def test_attached_polcies(self):
         self.common_variables = {
+            'PolicyName': 'myTest',
             'Ec2Roles': [
                 'ec2role'
             ],

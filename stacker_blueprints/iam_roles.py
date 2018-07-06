@@ -28,6 +28,11 @@ class Roles(Blueprint):
             "description": "Provide the path",
             "default": "",
         },
+        "AttachedPolicies": {
+            "type": list,
+            "description": "List of ARNs of policies to attachg",
+            "default": [],
+        },
         "Ec2Roles": {
             "type": list,
             "description": "names of ec2 roles to create",

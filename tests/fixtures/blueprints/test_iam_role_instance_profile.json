@@ -8,6 +8,11 @@
                 ]
             }
         }, 
+        "InstanceProfileName": {
+            "Value": {
+                "Ref": "ec2roleInstanceProfile"
+            }
+        }, 
         "PolicyName": {
             "Value": {
                 "Ref": "Policy"
