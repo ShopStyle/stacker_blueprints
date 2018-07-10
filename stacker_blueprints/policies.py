@@ -264,8 +264,20 @@ def lambda_basic_execution_statements(function_name):
 
 def lambda_edge_execution_statements(function_name, **kwargs):
 
-    resources = cloudwatch_logs_resources(
-        lambda_log_group(function_name), **kwargs)
+    resources = [
+        Sub(
+            ":".join([
+                "arn",
+                "${AWS::Partition}",
+                "logs",
+                "${AWS::Region}",
+                "${AWS::AccountId}",
+                "log-group",
+                "/aws/lambda/{}".format(function_name),
+                "*",
+            ])
+        ).to_dict()
+    ]
 
     return [
         Statement(
