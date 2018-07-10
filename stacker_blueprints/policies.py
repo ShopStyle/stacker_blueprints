@@ -262,34 +262,38 @@ def lambda_basic_execution_statements(function_name):
     return cloudwatch_logs_write_statements(lambda_log_group(function_name))
 
 
+def resources_sub_list(*args):
+    return [
+        Sub(":".join(*args)).to_dict()
+    ]
+
+
 def lambda_edge_execution_statements(function_name, **kwargs):
 
-    resources = [
-        Sub(
-            ":".join([
-                "arn",
-                "${AWS::Partition}",
-                "logs",
-                "${AWS::Region}",
-                "${AWS::AccountId}",
-                "log-group",
-                "/aws/lambda/{}".format(function_name),
-                "*",
-            ])
-        ).to_dict()
+    base_resource_list = [
+        "arn",
+        "${AWS::Partition}",
+        "logs",
+        "${AWS::Region}",
+        "${AWS::AccountId}",
+        "log-group",
+        "/aws/lambda/{}".format(function_name),
+        "*",
     ]
 
     return [
         Statement(
             Effect=Allow,
-            Resource=resources,
+            Resource=resources_sub_list(base_resource_list),
             Action=[
                 logs.CreateLogStream,
             ]
         ),
         Statement(
             Effect=Allow,
-            Resource=resources,
+            Resource=resources_sub_list(
+                base_resource_list + ["*"],
+            ),
             Action=[
                 logs.PutLogEvents,
             ]
