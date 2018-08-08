@@ -16,26 +16,81 @@ from awacs.helpers.trust import (
 )
 
 
-class Roles(Blueprint):
+class RoleBaseBlueprint(Blueprint):
+
+    def __init__(self, *args, **kwargs):
+        super(RoleBaseBlueprint, self).__init__(*args, **kwargs)
+        self.roles = []
+        self.policies = []
+
+    def create_role(self, name, policy):
+        raise NotImplemented
+
+    def create_ec2_role(self, name):
+        return self.create_role(name, get_default_assumerole_policy())
+
+    def create_lambda_role(self, name):
+        return self.create_role(name, get_lambda_assumerole_policy())
+
+    def generate_policy_statements(self):
+        """Should be overridden on a subclass to create policy statements.
+
+        By subclassing this blueprint, and overriding this method to generate
+        a list of :class:`awacs.aws.Statement` types, a
+        :class:`troposphere.iam.PolicyType` will be created and attached to
+        the roles specified here.
+
+        If not specified, no Policy will be created.
+        """
+
+        return []
+
+    def create_policy(self, name=None):
+        statements = self.generate_policy_statements()
+        if not statements:
+            return
+
+        t = self.template
+
+        logical_name = "Policy"
+        if name:
+            logical_name += name
+
+        policy = t.add_resource(
+            iam.PolicyType(
+                "Policy",
+                PolicyName=Sub("${AWS::StackName}-policy"),
+                PolicyDocument=Policy(
+                    Statement=statements,
+                ),
+                Roles=[Ref(role) for role in self.roles],
+            )
+        )
+
+        t.add_output(
+            Output("PolicyName", Value=Ref(policy))
+        )
+        self.policies.append(policy)
+        return policy
+
+
+class Ec2Role(RoleBaseBlueprint):
+    """
+    Blueprint to create an Ec2 role.
+
+    - class_path: stacker_blueprints.iam_roles.Ec2Role
+      name: my-role
+        variables:
+          AttachedPolicies:
+          - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+          InstanceProfile: True
+          Name: myRole
+          Path: /
+    """
     VARIABLES = {
         "AttachedPolicies": {
             "type": list,
             "description": "List of ARNs of policies to attach",
-            "default": [],
-        },
-        "Path": {
-            "type": str,
-            "description": "Provide the path",
-            "default": "",
-        },
-        "AttachedPolicies": {
-            "type": list,
-            "description": "List of ARNs of policies to attachg",
-            "default": [],
-        },
-        "Ec2Roles": {
-            "type": list,
-            "description": "names of ec2 roles to create",
             "default": [],
         },
         "InstanceProfile": {
@@ -43,17 +98,16 @@ class Roles(Blueprint):
             "description": "The role is an instance profile.",
             "default": False,
         },
-        "LambdaRoles": {
-            "type": list,
-            "description": "names of lambda roles to create",
-            "default": [],
+        "Name": {
+            "type": str,
+            "description": "The name of the role",
+        },
+        "Path": {
+            "type": str,
+            "description": "Provide the path",
+            "default": "",
         },
     }
-
-    def __init__(self, *args, **kwargs):
-        super(Roles, self).__init__(*args, **kwargs)
-        self.roles = []
-        self.policies = []
 
     def create_role(self, name, assumerole_policy):
         t = self.template
@@ -64,7 +118,7 @@ class Roles(Blueprint):
         }
 
         attached_policies = v['AttachedPolicies']
-        if attached_policies and len(attached_policies):
+        if attached_policies:
             role_kwargs['ManagedPolicyArns'] = attached_policies
 
         path = v['Path']
@@ -114,48 +168,48 @@ class Roles(Blueprint):
         self.roles.append(role)
         return role
 
-    def create_ec2_role(self, name):
-        return self.create_role(name, get_default_assumerole_policy())
+    def create_template(self):
+        v = self.get_variables()
+        self.create_ec2_role(v["Name"])
+        self.create_policy()
 
-    def create_lambda_role(self, name):
-        return self.create_role(name, get_lambda_assumerole_policy())
 
-    def generate_policy_statements(self):
-        """Should be overridden on a subclass to create policy statements.
+class Roles(RoleBaseBlueprint):
+    """
+    Blueprint to create many Ec2 and Lambda roles.
+    """
+    VARIABLES = {
+        "Ec2Roles": {
+            "type": list,
+            "description": "names of ec2 roles to create",
+            "default": [],
+        },
+        "LambdaRoles": {
+            "type": list,
+            "description": "names of lambda roles to create",
+            "default": [],
+        },
+    }
 
-        By subclassing this blueprint, and overriding this method to generate
-        a list of :class:`awacs.aws.Statement` types, a
-        :class:`troposphere.iam.PolicyType` will be created and attached to
-        the roles specified here.
-
-        If not specified, no Policy will be created.
-        """
-
-        return []
-
-    def create_policy(self):
-        statements = self.generate_policy_statements()
-        if not statements:
-            return
-
+    def create_role(self, name, assumerole_policy):
         t = self.template
 
-        policy = t.add_resource(
-            iam.PolicyType(
-                "Policy",
-                PolicyName=Sub("${AWS::StackName}-policy"),
-                PolicyDocument=Policy(
-                    Statement=statements,
-                ),
-                Roles=[Ref(role) for role in self.roles],
+        role = t.add_resource(
+            iam.Role(
+                name,
+                AssumeRolePolicyDocument=assumerole_policy,
             )
         )
 
         t.add_output(
-            Output("PolicyName", Value=Ref(policy))
+            Output(name + "RoleName", Value=Ref(role))
         )
-        self.policies.append(policy)
-        return policy
+        t.add_output(
+            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
+        )
+
+        self.roles.append(role)
+        return role
 
     def create_template(self):
         variables = self.get_variables()

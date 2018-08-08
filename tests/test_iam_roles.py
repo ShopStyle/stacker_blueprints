@@ -3,13 +3,12 @@ from awacs import ecr, logs
 
 from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
-from stacker.exceptions import InvalidConfig
 from stacker.variables import Variable
 
 from stacker_blueprints import iam_roles
 
 
-class TestIamRolesBlueprint(BlueprintTestCase):
+class TestIamRolesCommon(BlueprintTestCase):
 
     def setUp(self):
         self.common_variables = {}
@@ -21,8 +20,8 @@ class TestIamRolesBlueprint(BlueprintTestCase):
     def generate_variables(self, variable_dict=None):
         return [Variable(k, v) for k, v in self.common_variables.items()]
 
-    def create_blueprint(self, name):
-        class TestRole(iam_roles.Roles):
+    def create_blueprint(self, name, class_name):
+        class TestRole(class_name):
             def generate_policy_statements(self):
                 return [
                     Statement(
@@ -43,60 +42,36 @@ class TestIamRolesBlueprint(BlueprintTestCase):
 
         return TestRole(name, self.ctx)
 
-    def test_ec2_role(self):
+
+class TestIamRolesBlueprint(TestIamRolesCommon):
+
+    def test_roles(self):
         self.common_variables = {
             'Ec2Roles': [
                 'ec2role'
-            ]
-        }
-        blueprint = self.create_blueprint('test_iam_role_ec2')
-        blueprint.resolve_variables(self.generate_variables())
-        blueprint.create_template()
-        self.assertRenderedBlueprint(blueprint)
-
-    def test_lambda_role(self):
-        self.common_variables = {
+            ],
             'LambdaRoles': [
                 'lambdarole'
-            ]
+            ],
         }
-        blueprint = self.create_blueprint('test_iam_role_lambda')
+        blueprint = self.create_blueprint('test_iam_roles_roles', class_name=iam_roles.Roles)
         blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
-    def test_attached_polcies(self):
-        self.common_variables = {
-            'PolicyName': 'myTest',
-            'Ec2Roles': [
-                'ec2role'
-            ],
-            'AttachedPolicies': [
-                'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
-            ],
-        }
-        blueprint = self.create_blueprint('test_iam_role_attached_polcies')
-        blueprint.resolve_variables(self.generate_variables())
-        blueprint.create_template()
-        self.assertRenderedBlueprint(blueprint)
 
-    def test_instance_profile(self):
+class TestIamEc2RoleBlueprint(TestIamRolesCommon):
+
+    def test_role(self):
         self.common_variables = {
-            'Ec2Roles': [
-                'ec2role'
-            ],
             'AttachedPolicies': [
                 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
             ],
             'InstanceProfile': True,
+            'Name': 'myRole',
+            'Path': '/',
         }
-        blueprint = self.create_blueprint('test_iam_role_instance_profile')
+        blueprint = self.create_blueprint('test_iam_roles_ec2_role', class_name=iam_roles.Ec2Role)
         blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
-
-    def test_empty(self):
-        blueprint = self.create_blueprint('test_iam_role_empty')
-        blueprint.resolve_variables(self.generate_variables())
-        with self.assertRaises(InvalidConfig):
-            blueprint.create_template()

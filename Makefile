@@ -7,6 +7,7 @@ lint:
 
 test:
 	python setup.py nosetests \
+		${NOSE_ARGS} \
 		--with-coverage \
 		--cover-html \
 		--cover-package=stacker_blueprints \
