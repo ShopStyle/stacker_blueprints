@@ -1,21 +1,34 @@
 {
     "Outputs": {
+        "InstanceProfileArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "myNameInstanceProfile", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "InstanceProfileName": {
+            "Value": {
+                "Ref": "myNameInstanceProfile"
+            }
+        }, 
         "PolicyName": {
             "Value": {
                 "Ref": "Policy"
             }
         }, 
-        "ec2roleRoleArn": {
+        "myNameArn": {
             "Value": {
                 "Fn::GetAtt": [
-                    "ec2role", 
+                    "myName", 
                     "Arn"
                 ]
             }
         }, 
-        "ec2roleRoleName": {
+        "myNameName": {
             "Value": {
-                "Ref": "ec2role"
+                "Ref": "myName"
             }
         }
     }, 
@@ -49,13 +62,13 @@
                 }, 
                 "Roles": [
                     {
-                        "Ref": "ec2role"
+                        "Ref": "myName"
                     }
                 ]
             }, 
             "Type": "AWS::IAM::Policy"
         }, 
-        "ec2role": {
+        "myName": {
             "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Statement": [
@@ -74,9 +87,21 @@
                 }, 
                 "ManagedPolicyArns": [
                     "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
-                ]
+                ], 
+                "Path": "/"
             }, 
             "Type": "AWS::IAM::Role"
+        }, 
+        "myNameInstanceProfile": {
+            "Properties": {
+                "Path": "/", 
+                "Roles": [
+                    {
+                        "Ref": "myName"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::InstanceProfile"
         }
     }
 }

@@ -3,14 +3,14 @@
         "InstanceProfileArn": {
             "Value": {
                 "Fn::GetAtt": [
-                    "myRoleInstanceProfile", 
+                    "RoleInstanceProfile", 
                     "Arn"
                 ]
             }
         }, 
         "InstanceProfileName": {
             "Value": {
-                "Ref": "myRoleInstanceProfile"
+                "Ref": "RoleInstanceProfile"
             }
         }, 
         "PolicyName": {
@@ -18,17 +18,17 @@
                 "Ref": "Policy"
             }
         }, 
-        "myRoleRoleArn": {
+        "RoleArn": {
             "Value": {
                 "Fn::GetAtt": [
-                    "myRole", 
+                    "Role", 
                     "Arn"
                 ]
             }
         }, 
-        "myRoleRoleName": {
+        "RoleName": {
             "Value": {
-                "Ref": "myRole"
+                "Ref": "Role"
             }
         }
     }, 
@@ -62,13 +62,13 @@
                 }, 
                 "Roles": [
                     {
-                        "Ref": "myRole"
+                        "Ref": "Role"
                     }
                 ]
             }, 
             "Type": "AWS::IAM::Policy"
         }, 
-        "myRole": {
+        "Role": {
             "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Statement": [
@@ -92,12 +92,12 @@
             }, 
             "Type": "AWS::IAM::Role"
         }, 
-        "myRoleInstanceProfile": {
+        "RoleInstanceProfile": {
             "Properties": {
                 "Path": "/", 
                 "Roles": [
                     {
-                        "Ref": "myRole"
+                        "Ref": "Role"
                     }
                 ]
             }, 

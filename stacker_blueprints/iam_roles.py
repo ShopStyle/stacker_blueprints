@@ -58,7 +58,7 @@ class RoleBaseBlueprint(Blueprint):
 
         policy = t.add_resource(
             iam.PolicyType(
-                "Policy",
+                logical_name,
                 PolicyName=Sub("${AWS::StackName}-policy"),
                 PolicyDocument=Policy(
                     Statement=statements,
@@ -100,7 +100,8 @@ class Ec2Role(RoleBaseBlueprint):
         },
         "Name": {
             "type": str,
-            "description": "The name of the role",
+            "description": "Override the name of the role.",
+            "default": "Role",
         },
         "Path": {
             "type": str,
@@ -133,11 +134,11 @@ class Ec2Role(RoleBaseBlueprint):
         )
 
         t.add_output(
-            Output(name + "RoleName", Value=Ref(role))
+            Output(name + "Name", Value=Ref(role))
         )
 
         t.add_output(
-            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
+            Output(name + "Arn", Value=GetAtt(role.title, "Arn"))
         )
 
         if v['InstanceProfile']:

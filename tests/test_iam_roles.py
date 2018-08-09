@@ -68,10 +68,23 @@ class TestIamEc2RoleBlueprint(TestIamRolesCommon):
                 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
             ],
             'InstanceProfile': True,
-            'Name': 'myRole',
             'Path': '/',
         }
         blueprint = self.create_blueprint('test_iam_roles_ec2_role', class_name=iam_roles.Ec2Role)
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_role_name(self):
+        self.common_variables = {
+            'AttachedPolicies': [
+                'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+            ],
+            'InstanceProfile': True,
+            'Name': 'myName',
+            'Path': '/',
+        }
+        blueprint = self.create_blueprint('test_iam_roles_ec2_role_name', class_name=iam_roles.Ec2Role)
         blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
