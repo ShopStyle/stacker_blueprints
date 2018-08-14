@@ -15,7 +15,7 @@
         }, 
         "PolicyName": {
             "Value": {
-                "Ref": "Policy"
+                "Ref": "RolePolicy"
             }
         }, 
         "RoleRoleArn": {
@@ -33,41 +33,6 @@
         }
     }, 
     "Resources": {
-        "Policy": {
-            "Properties": {
-                "PolicyDocument": {
-                    "Statement": [
-                        {
-                            "Action": [
-                                "logs:CreateLogGroup", 
-                                "logs:CreateLogStream", 
-                                "logs:PutLogEvents"
-                            ], 
-                            "Effect": "Allow", 
-                            "Resource": "arn:aws:logs:*:*:*"
-                        }, 
-                        {
-                            "Action": [
-                                "ecr:GetAuthorizationToken"
-                            ], 
-                            "Effect": "Allow", 
-                            "Resource": [
-                                "*"
-                            ]
-                        }
-                    ]
-                }, 
-                "PolicyName": {
-                    "Fn::Sub": "${AWS::StackName}-policy"
-                }, 
-                "Roles": [
-                    {
-                        "Ref": "Role"
-                    }
-                ]
-            }, 
-            "Type": "AWS::IAM::Policy"
-        }, 
         "Role": {
             "Properties": {
                 "AssumeRolePolicyDocument": {
@@ -102,6 +67,46 @@
                 ]
             }, 
             "Type": "AWS::IAM::InstanceProfile"
+        }, 
+        "RolePolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": [
+                        "${AWS::StackName}-${Name}-policy", 
+                        {
+                            "Name": "Role"
+                        }
+                    ]
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "Role"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
         }
     }
 }

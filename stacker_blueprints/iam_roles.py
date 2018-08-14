@@ -53,12 +53,15 @@ class RoleBaseBlueprint(Blueprint):
 
         logical_name = "Policy"
         if name:
-            logical_name += name
+            logical_name = "{}Policy".format(name)
+            policy_name = Sub("${AWS::StackName}-${Name}-policy", Name=name)
+        else:
+            policy_name = Sub("${AWS::StackName}-policy")
 
         policy = t.add_resource(
             iam.PolicyType(
                 logical_name,
-                PolicyName=Sub("${AWS::StackName}-policy"),
+                PolicyName=policy_name,
                 PolicyDocument=Policy(
                     Statement=statements,
                 ),
@@ -171,7 +174,7 @@ class Ec2Role(RoleBaseBlueprint):
     def create_template(self):
         v = self.get_variables()
         self.create_ec2_role(v["Name"])
-        self.create_policy()
+        self.create_policy(v["Name"])
 
 
 class Roles(RoleBaseBlueprint):
