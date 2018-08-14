@@ -11,9 +11,13 @@ install_requires = [
 ]
 
 tests_require = [
-    "nose",
+    "coverage>=4.5.1",
     "mock~=2.0.0",
     "stacker>=1.1.1",
+]
+
+setup_requires = [
+    'nose>=1.0',
 ]
 
 
@@ -34,6 +38,7 @@ if __name__ == "__main__":
         description="Default blueprints for stacker",
         long_description=read("README.rst"),
         packages=find_packages(),
+        setup_requires=setup_requires,
         install_requires=install_requires,
         tests_require=tests_require,
         test_suite="nose.collector",
