@@ -1,0 +1,93 @@
+{
+    "Outputs": {
+        "DistributionId": {
+            "Value": {
+                "Ref": "CFDIST"
+            }
+        }, 
+        "DomainName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "CFDIST", 
+                    "DomainName"
+                ]
+            }
+        }, 
+        "HostedZoneId": {
+            "Value": "Z2FDTNDATAQYW2"
+        }
+    }, 
+    "Resources": {
+        "CFDIST": {
+            "Properties": {
+                "DistributionConfig": {
+                    "Aliases": [
+                        "domain.name"
+                    ], 
+                    "CacheBehaviors": [
+                        {
+                            "ForwardedValues": {
+                                "QueryString": "true"
+                            }, 
+                            "PathPattern": "/", 
+                            "TargetOriginId": "AnotherOrigin", 
+                            "ViewerProtocolPolicy": "allow-all"
+                        }
+                    ], 
+                    "Comment": "", 
+                    "CustomErrorResponses": [], 
+                    "DefaultCacheBehavior": {
+                        "ForwardedValues": {
+                            "QueryString": "true"
+                        }, 
+                        "TargetOriginId": "DefaultOrigin", 
+                        "ViewerProtocolPolicy": "allow-all"
+                    }, 
+                    "DefaultRootObject": "", 
+                    "Enabled": "true", 
+                    "IPV6Enabled": "false", 
+                    "Origins": [
+                        {
+                            "DomainName": "bucket.s3.amazonaws.com", 
+                            "Id": "DefaultOrigin", 
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": ""
+                            }
+                        }, 
+                        {
+                            "CustomOriginConfig": {
+                                "HTTPPort": 80, 
+                                "HTTPSPort": 443, 
+                                "OriginKeepaliveTimeout": 10, 
+                                "OriginProtocolPolicy": "match-viewer", 
+                                "OriginReadTimeout": 20
+                            }, 
+                            "DomainName": "mybackend.domain.name", 
+                            "Id": "AnotherOrigin"
+                        }
+                    ], 
+                    "PriceClass": "PriceClass_100", 
+                    "ViewerCertificate": {
+                        "CloudFrontDefaultCertificate": "true"
+                    }, 
+                    "WebACLId": ""
+                }, 
+                "Tags": [
+                    {
+                        "Key": "A", 
+                        "Value": "Tag"
+                    }, 
+                    {
+                        "Key": "Name", 
+                        "Value": "test_cloudfront"
+                    }, 
+                    {
+                        "Key": "Stacker", 
+                        "Value": "Created by Stacker"
+                    }
+                ]
+            }, 
+            "Type": "AWS::CloudFront::Distribution"
+        }
+    }
+}
