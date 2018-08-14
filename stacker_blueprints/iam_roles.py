@@ -15,44 +15,15 @@ from awacs.helpers.trust import (
 )
 
 
-class Roles(Blueprint):
-    VARIABLES = {
-        "Ec2Roles": {
-            "type": list,
-            "description": "names of ec2 roles to create",
-            "default": [],
-        },
-        "LambdaRoles": {
-            "type": list,
-            "description": "names of lambda roles to create",
-            "default": [],
-        },
-    }
+class RoleBaseBlueprint(Blueprint):
 
     def __init__(self, *args, **kwargs):
-        super(Roles, self).__init__(*args, **kwargs)
+        super(RoleBaseBlueprint, self).__init__(*args, **kwargs)
         self.roles = []
         self.policies = []
 
-    def create_role(self, name, assumerole_policy):
-        t = self.template
-
-        role = t.add_resource(
-            iam.Role(
-                name,
-                AssumeRolePolicyDocument=assumerole_policy,
-            )
-        )
-
-        t.add_output(
-            Output(name + "RoleName", Value=Ref(role))
-        )
-        t.add_output(
-            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
-        )
-
-        self.roles.append(role)
-        return role
+    def create_role(self, name, policy):
+        raise NotImplemented
 
     def create_ec2_role(self, name):
         return self.create_role(name, get_default_assumerole_policy())
@@ -73,17 +44,21 @@ class Roles(Blueprint):
 
         return []
 
-    def create_policy(self, name):
+    def create_policy(self, name=None):
         statements = self.generate_policy_statements()
         if not statements:
             return
 
         t = self.template
 
+        logical_name = "Policy"
+        if name:
+            logical_name += name
+
         policy = t.add_resource(
             iam.PolicyType(
-                "{}Policy".format(name),
-                PolicyName=Sub("${AWS::StackName}-${Name}-policy", Name=name),
+                logical_name,
+                PolicyName=Sub("${AWS::StackName}-policy"),
                 PolicyDocument=Policy(
                     Statement=statements,
                 ),
@@ -92,9 +67,149 @@ class Roles(Blueprint):
         )
 
         t.add_output(
-            Output(name + "PolicyName", Value=Ref(policy))
+            Output("PolicyName", Value=Ref(policy))
         )
         self.policies.append(policy)
+        return policy
+
+
+class Ec2Role(RoleBaseBlueprint):
+    """
+    Blueprint to create an Ec2 role.
+
+    - class_path: stacker_blueprints.iam_roles.Ec2Role
+      name: my-role
+        variables:
+          AttachedPolicies:
+          - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+          InstanceProfile: True
+          Name: myRole
+          Path: /
+    """
+    VARIABLES = {
+        "AttachedPolicies": {
+            "type": list,
+            "description": "List of ARNs of policies to attach",
+            "default": [],
+        },
+        "InstanceProfile": {
+            "type": bool,
+            "description": "The role is an instance profile.",
+            "default": False,
+        },
+        "Name": {
+            "type": str,
+            "description": "The name of the role",
+            "default": "Role",
+        },
+        "Path": {
+            "type": str,
+            "description": "Provide the path",
+            "default": "",
+        },
+    }
+
+    def create_role(self, name, assumerole_policy):
+        t = self.template
+        v = self.get_variables()
+
+        role_kwargs = {
+            'AssumeRolePolicyDocument': assumerole_policy,
+        }
+
+        attached_policies = v['AttachedPolicies']
+        if attached_policies:
+            role_kwargs['ManagedPolicyArns'] = attached_policies
+
+        path = v['Path']
+        if path:
+            role_kwargs['Path'] = path
+
+        role = t.add_resource(
+            iam.Role(
+                name,
+                **role_kwargs
+            )
+        )
+
+        t.add_output(
+            Output(name + "RoleName", Value=Ref(role))
+        )
+
+        t.add_output(
+            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
+        )
+
+        if v['InstanceProfile']:
+            profile_kwargs = {
+                'Roles': [
+                    Ref(role),
+                ],
+            }
+
+            if path:
+                profile_kwargs['Path'] = path
+
+            instance_profile = t.add_resource(
+                iam.InstanceProfile(
+                    name + 'InstanceProfile',
+                    **profile_kwargs
+                )
+            )
+
+            t.add_output(
+                Output("InstanceProfileName", Value=Ref(instance_profile))
+            )
+
+            t.add_output(
+                Output("InstanceProfileArn", Value=GetAtt(instance_profile.title, "Arn"))
+            )
+
+        self.roles.append(role)
+        return role
+
+    def create_template(self):
+        v = self.get_variables()
+        self.create_ec2_role(v["Name"])
+        self.create_policy()
+
+
+class Roles(RoleBaseBlueprint):
+    """
+    Blueprint to create many Ec2 and Lambda roles.
+    """
+    VARIABLES = {
+        "Ec2Roles": {
+            "type": list,
+            "description": "names of ec2 roles to create",
+            "default": [],
+        },
+        "LambdaRoles": {
+            "type": list,
+            "description": "names of lambda roles to create",
+            "default": [],
+        },
+    }
+
+    def create_role(self, name, assumerole_policy):
+        t = self.template
+
+        role = t.add_resource(
+            iam.Role(
+                name,
+                AssumeRolePolicyDocument=assumerole_policy,
+            )
+        )
+
+        t.add_output(
+            Output(name + "RoleName", Value=Ref(role))
+        )
+        t.add_output(
+            Output(name + "RoleArn", Value=GetAtt(role.title, "Arn"))
+        )
+
+        self.roles.append(role)
+        return role
 
     def create_template(self):
         variables = self.get_variables()

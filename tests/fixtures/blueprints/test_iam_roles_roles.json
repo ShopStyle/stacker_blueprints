@@ -1,0 +1,115 @@
+{
+    "Outputs": {
+        "PolicyName": {
+            "Value": {
+                "Ref": "Policy"
+            }
+        }, 
+        "ec2roleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ec2role", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "ec2roleRoleName": {
+            "Value": {
+                "Ref": "ec2role"
+            }
+        }, 
+        "lambdaroleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "lambdarole", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "lambdaroleRoleName": {
+            "Value": {
+                "Ref": "lambdarole"
+            }
+        }
+    }, 
+    "Resources": {
+        "Policy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "ec2role"
+                    }, 
+                    {
+                        "Ref": "lambdarole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "ec2role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "lambdarole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::IAM::Role"
+        }
+    }
+}

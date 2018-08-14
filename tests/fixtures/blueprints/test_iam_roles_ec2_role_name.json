@@ -1,0 +1,107 @@
+{
+    "Outputs": {
+        "InstanceProfileArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "myRoleInstanceProfile", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "InstanceProfileName": {
+            "Value": {
+                "Ref": "myRoleInstanceProfile"
+            }
+        }, 
+        "PolicyName": {
+            "Value": {
+                "Ref": "Policy"
+            }
+        }, 
+        "myRoleRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "myRole", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "myRoleRoleName": {
+            "Value": {
+                "Ref": "myRole"
+            }
+        }
+    }, 
+    "Resources": {
+        "Policy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": "arn:aws:logs:*:*:*"
+                        }, 
+                        {
+                            "Action": [
+                                "ecr:GetAuthorizationToken"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
+                "Roles": [
+                    {
+                        "Ref": "myRole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "myRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }, 
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+                ], 
+                "Path": "/"
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "myRoleInstanceProfile": {
+            "Properties": {
+                "Path": "/", 
+                "Roles": [
+                    {
+                        "Ref": "myRole"
+                    }
+                ]
+            }, 
+            "Type": "AWS::IAM::InstanceProfile"
+        }
+    }
+}
