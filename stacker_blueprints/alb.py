@@ -6,6 +6,7 @@ from troposphere import (
     elasticloadbalancingv2 as alb,
     Output,
     Tags,
+    NoValue,
 )
 
 
@@ -98,6 +99,33 @@ class LoadBalancer(Blueprint):
             Output(alarm_name + "Arn", Value=alarm_resource.GetAtt("Arn"))
         )
 
+    def create_security_group(self, ingress_rules, egress_rules):
+        t = self.template
+        v = self.get_variables()
+
+        name = '{}-alb'.format(v['Name'])
+        logical_name = 'SECGROUP'
+
+        security_group = t.add_resource(
+            ec2.SecurityGroup(
+                logical_name,
+                GroupDescription='Security group for {}'.format(v['Name']),
+                SecurityGroupIngress=ingress_rules,
+                SecurityGroupEgress=egress_rules,
+                Tags=Tags({
+                    'Name': name,
+                }),
+                VpcId=v['VpcId'],
+            )
+        )
+
+        attr = 'GroupId'
+        t.add_output(
+            Output(logical_name + attr, Value=security_group.GetAtt(attr))
+        )
+
+        return security_group
+
     def create_load_balancer(self):
         t = self.template
         v = self.get_variables()
@@ -109,27 +137,14 @@ class LoadBalancer(Blueprint):
         tags.setdefault('Name', v['Name'])
 
         if ingress_rules or egress_rules:
-            name = '{}-alb'.format(v['Name'])
-            security_group = t.add_resource(
-                ec2.SecurityGroup(
-                    'SECGROUP',
-                    GroupName=name,
-                    GroupDescription='Security group for {}'.format(v['Name']),
-                    SecurityGroupIngress=ingress_rules,
-                    SecurityGroupEgress=egress_rules,
-                    Tags=Tags({
-                        'Name': name,
-                    }),
-                    VpcId=v['VpcId'],
-                )
+            security_groups.append(
+                self.create_security_group(ingress_rules, egress_rules).Ref()
             )
-            security_groups.append(security_group.Ref())
 
         logical_name = 'ALB'
-
         load_balancer = t.add_resource(
             alb.LoadBalancer(
-                'ALB',
+                logical_name,
                 Name=v['Name'],
                 Scheme=v['Scheme'],
                 IpAddressType=v['IpAddressType'],
@@ -140,7 +155,7 @@ class LoadBalancer(Blueprint):
             )
         )
 
-        alarms = v.get("Alarms", [])
+        alarms = v.get('Alarms', [])
         for alarm in alarms:
             alarm_name = '{}Alarm{}'.format(logical_name, alarm['MetricName'])
 
@@ -153,16 +168,28 @@ class LoadBalancer(Blueprint):
 
             self.create_alarm(alarm_name, alarm)
 
-        t.add_output(
-            Output('LoadBalancerArn', Value=load_balancer.Ref())
-        )
-
+        self.add_output("LoadBalancerArn", load_balancer.Ref())
         for attr in ('DNSName', 'CanonicalHostedZoneID', 'LoadBalancerFullName', 'LoadBalancerName'):
-            t.add_output(
-                Output(attr, Value=load_balancer.GetAtt(attr))
-            )
+            self.add_output(attr, load_balancer.GetAtt(attr))
 
         return load_balancer
+
+    def create_target_alarms(self, alarms, logical_name, load_balancer, target_group):
+        dimensions = [
+            {
+                'Name': 'LoadBalancer',
+                'Value': load_balancer.GetAtt('LoadBalancerFullName'),
+            },
+            {
+                'Name': 'TargetGroup',
+                'Value': target_group.GetAtt('TargetGroupFullName'),
+            },
+        ]
+
+        for alarm in alarms:
+            alarm_name = '{}Alarm{}'.format(logical_name, alarm['MetricName'])
+            alarm['Dimensions'] = dimensions
+            self.create_alarm(alarm_name, alarm)
 
     def create_target_groups(self, load_balancer):
         t = self.template
@@ -182,9 +209,7 @@ class LoadBalancer(Blueprint):
                 'UnhealthyThresholdCount': hc['UnhealthyThresholdCount'],
             }
 
-            hc_port = hc.get('Port')
-            if hc_port:
-                hc_attrs['HealthCheckPort'] = hc_port
+            hc_attrs['HealthCheckPort'] = hc.get('Port', NoValue)
 
             hc_protocol = hc.get('Protocol')
             if hc_protocol:
@@ -199,7 +224,6 @@ class LoadBalancer(Blueprint):
                     Matcher=alb.Matcher(
                         HttpCode=','.join(str(sc) for sc in hc['SuccessCodes'])
                     ),
-                    Name=tg['Name'],
                     Port=tg['Port'],
                     Protocol=tg['Protocol'].upper(),
                     Tags=Tags(tags),
@@ -220,22 +244,8 @@ class LoadBalancer(Blueprint):
 
             target_groups[tg['Name']] = target_group
 
-            alarms = tg.get("Alarms", [])
-            for alarm in alarms:
-                alarm_name = '{}Alarm{}'.format(logical_name, alarm['MetricName'])
-
-                alarm['Dimensions'] = [
-                    {
-                        'Name': 'LoadBalancer',
-                        'Value': load_balancer.GetAtt('LoadBalancerFullName'),
-                    },
-                    {
-                        'Name': 'TargetGroup',
-                        'Value': target_group.GetAtt('TargetGroupFullName'),
-                    },
-                ]
-
-                self.create_alarm(alarm_name, alarm)
+            alarms = tg.get('Alarms', [])
+            self.create_target_alarms(alarms, logical_name, load_balancer, target_group)
 
         return target_groups
 

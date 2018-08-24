@@ -60,6 +60,14 @@
                 ]
             }
         }, 
+        "SECGROUPGroupId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "SECGROUP", 
+                    "GroupId"
+                ]
+            }
+        }, 
         "TARGET443AlarmThrottles": {
             "Value": {
                 "Ref": "TARGET443AlarmThrottles"
@@ -204,7 +212,6 @@
         "SECGROUP": {
             "Properties": {
                 "GroupDescription": "Security group for namespace-service", 
-                "GroupName": "namespace-service-alb", 
                 "SecurityGroupEgress": [
                     {
                         "CidrIp": "0.0.0.0/0", 
@@ -247,12 +254,14 @@
             "Properties": {
                 "HealthCheckIntervalSeconds": 10, 
                 "HealthCheckPath": "/healthcheck", 
+                "HealthCheckPort": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "HealthCheckTimeoutSeconds": 5, 
                 "HealthyThresholdCount": 5, 
                 "Matcher": {
                     "HttpCode": "200,204"
                 }, 
-                "Name": "Kibana", 
                 "Port": 443, 
                 "Protocol": "HTTPS", 
                 "Tags": [
@@ -313,12 +322,14 @@
             "Properties": {
                 "HealthCheckIntervalSeconds": 10, 
                 "HealthCheckPath": "/", 
+                "HealthCheckPort": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "HealthCheckTimeoutSeconds": 5, 
                 "HealthyThresholdCount": 5, 
                 "Matcher": {
                     "HttpCode": "200"
                 }, 
-                "Name": "Elasticsearch", 
                 "Port": 9200, 
                 "Protocol": "HTTP", 
                 "Tags": [
