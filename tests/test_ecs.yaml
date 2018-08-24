@@ -1,0 +1,31 @@
+---
+namespace: test
+stacks:
+  - name: ecs__simple_fargate_service
+    class_path: stacker_blueprints.ecs.SimpleFargateService
+    variables:
+      ServiceName: WorkerService
+      Image: fake_repo/image:12345
+      Command: ["/bin/run", "--args 1"]
+      Cluster: fake-fargate-cluster
+      CPU: 1024
+      Memory: 2048
+      Count: 3
+      Subnets: ["net-123456", "net-5678910"]
+      SecurityGroup: sg-abc1234
+      Environment:
+        DATABASE_URL: sql://fake_db/fake_db
+        DEBUG: "false"
+  - name: ecs__simple_ecs_service
+    class_path: stacker_blueprints.ecs.SimpleECSService
+    variables:
+      ServiceName: WorkerService
+      Image: fake_repo/image:12345
+      Command: ["/bin/run", "--args 1"]
+      Cluster: fake-fargate-cluster
+      CPU: 1024
+      Memory: 2048
+      Count: 3
+      Environment:
+        DATABASE_URL: sql://fake_db/fake_db
+        DEBUG: "false"

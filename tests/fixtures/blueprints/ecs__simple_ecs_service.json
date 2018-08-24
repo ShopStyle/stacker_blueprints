@@ -66,8 +66,20 @@
         "Service": {
             "Properties": {
                 "Cluster": "fake-fargate-cluster", 
+                "DeploymentConfiguration": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "DesiredCount": 3, 
+                "HealthCheckGracePeriodSeconds": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "LaunchType": "EC2", 
+                "LoadBalancers": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "NetworkConfiguration": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "ServiceName": "WorkerService", 
                 "TaskDefinition": {
                     "Ref": "TaskDefinition"
@@ -97,15 +109,28 @@
                         "Essential": "true", 
                         "Image": "fake_repo/image:12345", 
                         "LogConfiguration": {
-                            "Ref": "AWS::NoValue"
+                            "LogDriver": "awslogs", 
+                            "Options": {
+                                "awslogs-group": "WorkerService", 
+                                "awslogs-region": {
+                                    "Ref": "AWS::Region"
+                                }, 
+                                "awslogs-stream-prefix": "WorkerService"
+                            }
                         }, 
                         "Memory": 2048, 
-                        "Name": "WorkerService"
+                        "Name": "WorkerService", 
+                        "PortMappings": {
+                            "Ref": "AWS::NoValue"
+                        }
                     }
                 ], 
                 "Cpu": "1024", 
                 "Family": "WorkerService", 
                 "Memory": "2048", 
+                "NetworkMode": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "TaskRoleArn": {
                     "Fn::GetAtt": [
                         "Role", 
