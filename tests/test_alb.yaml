@@ -1,0 +1,196 @@
+---
+namespace: test
+stacks:
+  - name: test_load_balancer_unnamed
+    class_path: stacker_blueprints.alb.LoadBalancer
+    variables:
+      IpAddressType: ipv4
+      VpcId: vpc-12345678
+      SubnetIds:
+        - subnet-3bcc6f4d
+        - subnet-40e81e6a
+        - subnet-e05fc8dd
+      EgressRules:
+        - ToPort: 0
+          FromPort: 0
+          IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      IngressRules:
+        - ToPort: 80
+          FromPort: 80
+          IpProtocol: tcp
+          CidrIp: 172.18.0.0/22
+        - ToPort: 443
+          FromPort: 443
+          IpProtocol: tcp
+          CidrIp: 172.18.0.0/22
+        - SourceSecurityGroupId: sg-12345678
+          IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+      TargetGroups:
+        ssl:
+          TargetType: instance
+          Protocol: https
+          HealthCheck:
+            HealthyThresholdCount: 5
+            SuccessCodes:
+              - 200
+              - 204
+            TimeoutSeconds: 5
+            Path: /healthcheck
+            IntervalSeconds: 10
+            UnhealthyThresholdCount: 2
+          Port: 443
+          Targets:
+            - i-1234567890
+          Alarms:
+            - ActionsEnabled: True
+              AlarmActions: 
+                - arn:aws:sns:us-east-1:<accountid>:<queue-name>
+              AlarmDescription: "The throttle rate is >= 1"
+              ComparisonOperator: GreaterThanOrEqualToThreshold
+              EvaluationPeriods: 1
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+              Period: 300
+              Statistic: Sum
+              Threshold: "1"
+        http-9200:
+          TargetType: instance
+          Protocol: http
+          HealthCheck: 
+            HealthyThresholdCount: 5
+            SuccessCodes:
+              - 200
+            TimeoutSeconds: 5
+            Path: /
+            IntervalSeconds: 10
+            UnhealthyThresholdCount: 2
+          Port: 9200
+          Targets:
+            - i-1234567890
+      Listeners:
+      - Certificates: 
+          - "arn:aws:iam::<accountid>:server-certificate/<certificate-name>"
+        DefaultActions: 
+        - TargetGroup: ssl
+          Type: forward
+        Protocol: HTTPS
+        Port: 443
+      - DefaultActions: 
+         - TargetGroup: http-9200
+           Type: forward
+        Protocol: HTTP
+        Port: 9200
+      Scheme: internal
+      Type: application
+      Alarms:
+      - ActionsEnabled: True
+        AlarmActions: 
+          - "arn:aws:sns:us-east-1:<accountid>:<queue-name>"
+        AlarmDescription: "The error rate is >= 1"
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        MetricName: HTTPCode_Target_5XX_Count
+        Period: 300
+        Statistic: Sum
+        Threshold: "1"
+  - name: test_load_balancer_named
+    class_path: stacker_blueprints.alb.LoadBalancer
+    variables:
+      IpAddressType: ipv4
+      VpcId: vpc-12345678
+      Name: myALB
+      SubnetIds:
+        - subnet-3bcc6f4d
+        - subnet-40e81e6a
+        - subnet-e05fc8dd
+      EgressRules:
+        - ToPort: 0
+          FromPort: 0
+          IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      IngressRules:
+        - ToPort: 80
+          FromPort: 80
+          IpProtocol: tcp
+          CidrIp: 172.18.0.0/22
+        - ToPort: 443
+          FromPort: 443
+          IpProtocol: tcp
+          CidrIp: 172.18.0.0/22
+        - SourceSecurityGroupId: sg-12345678
+          IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+      TargetGroups:
+        ssl:
+          TargetType: instance
+          Name: Kibana
+          Protocol: https
+          HealthCheck:
+            HealthyThresholdCount: 5
+            SuccessCodes:
+              - 200
+              - 204
+            TimeoutSeconds: 5
+            Path: /healthcheck
+            IntervalSeconds: 10
+            UnhealthyThresholdCount: 2
+          Port: 443
+          Targets:
+            - i-1234567890
+          Alarms:
+            - ActionsEnabled: True
+              AlarmActions: 
+                - arn:aws:sns:us-east-1:<accountid>:<queue-name>
+              AlarmDescription: "The throttle rate is >= 1"
+              ComparisonOperator: GreaterThanOrEqualToThreshold
+              EvaluationPeriods: 1
+              MetricName: Throttles
+              Namespace: AWS/Lambda
+              Period: 300
+              Statistic: Sum
+              Threshold: "1"
+        http-9200:
+          TargetType: instance
+          Name: Elasticsearch
+          Protocol: http
+          HealthCheck: 
+            HealthyThresholdCount: 5
+            SuccessCodes:
+              - 200
+            TimeoutSeconds: 5
+            Path: /
+            IntervalSeconds: 10
+            UnhealthyThresholdCount: 2
+          Port: 9200
+          Targets:
+            - i-1234567890
+      Listeners:
+      - Certificates: 
+          - "arn:aws:iam::<accountid>:server-certificate/<certificate-name>"
+        DefaultActions: 
+        - TargetGroup: ssl
+          Type: forward
+        Protocol: HTTPS
+        Port: 443
+      - DefaultActions: 
+         - TargetGroup: http-9200
+           Type: forward
+        Protocol: HTTP
+        Port: 9200
+      Scheme: internal
+      Type: application
+      Alarms:
+      - ActionsEnabled: True
+        AlarmActions: 
+          - "arn:aws:sns:us-east-1:<accountid>:<queue-name>"
+        AlarmDescription: "The error rate is >= 1"
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        EvaluationPeriods: 1
+        MetricName: HTTPCode_Target_5XX_Count
+        Period: 300
+        Statistic: Sum
+        Threshold: "1"

@@ -1,0 +1,352 @@
+{
+    "Outputs": {
+        "ALBAlarmHTTPCodeTarget5XXCount": {
+            "Value": {
+                "Ref": "ALBAlarmHTTPCodeTarget5XXCount"
+            }
+        }, 
+        "ALBAlarmHTTPCodeTarget5XXCountArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ALBAlarmHTTPCodeTarget5XXCount", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "CanonicalHostedZoneID": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ALB", 
+                    "CanonicalHostedZoneID"
+                ]
+            }
+        }, 
+        "DNSName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ALB", 
+                    "DNSName"
+                ]
+            }
+        }, 
+        "Listener443Arn": {
+            "Value": {
+                "Ref": "LISTENER443"
+            }
+        }, 
+        "Listener9200Arn": {
+            "Value": {
+                "Ref": "LISTENER9200"
+            }
+        }, 
+        "LoadBalancerArn": {
+            "Value": {
+                "Ref": "ALB"
+            }
+        }, 
+        "LoadBalancerFullName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ALB", 
+                    "LoadBalancerFullName"
+                ]
+            }
+        }, 
+        "LoadBalancerName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "ALB", 
+                    "LoadBalancerName"
+                ]
+            }
+        }, 
+        "SECGROUPGroupId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "SECGROUP", 
+                    "GroupId"
+                ]
+            }
+        }, 
+        "TARGET443AlarmThrottles": {
+            "Value": {
+                "Ref": "TARGET443AlarmThrottles"
+            }
+        }, 
+        "TARGET443AlarmThrottlesArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TARGET443AlarmThrottles", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "TARGET443TargetGroupFullName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TARGET443", 
+                    "TargetGroupFullName"
+                ]
+            }
+        }, 
+        "TARGET443TargetGroupName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TARGET443", 
+                    "TargetGroupName"
+                ]
+            }
+        }, 
+        "TARGET9200TargetGroupFullName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TARGET9200", 
+                    "TargetGroupFullName"
+                ]
+            }
+        }, 
+        "TARGET9200TargetGroupName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "TARGET9200", 
+                    "TargetGroupName"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "ALB": {
+            "Properties": {
+                "IpAddressType": "ipv4", 
+                "Scheme": "internal", 
+                "SecurityGroups": [
+                    {
+                        "Ref": "SECGROUP"
+                    }
+                ], 
+                "Subnets": [
+                    "subnet-3bcc6f4d", 
+                    "subnet-40e81e6a", 
+                    "subnet-e05fc8dd"
+                ], 
+                "Tags": [
+                    {
+                        "Key": "Name", 
+                        "Value": ""
+                    }
+                ], 
+                "Type": "application"
+            }, 
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+        }, 
+        "ALBAlarmHTTPCodeTarget5XXCount": {
+            "Properties": {
+                "ActionsEnabled": "true", 
+                "AlarmActions": [
+                    "arn:aws:sns:us-east-1:<accountid>:<queue-name>"
+                ], 
+                "AlarmDescription": "The error rate is >= 1", 
+                "ComparisonOperator": "GreaterThanOrEqualToThreshold", 
+                "Dimensions": [
+                    {
+                        "Name": "LoadBalancer", 
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "ALB", 
+                                "LoadBalancerFullName"
+                            ]
+                        }
+                    }
+                ], 
+                "EvaluationPeriods": 1, 
+                "MetricName": "HTTPCode_Target_5XX_Count", 
+                "Namespace": "AWS/ApplicationELB", 
+                "Period": 300, 
+                "Statistic": "Sum", 
+                "Threshold": "1"
+            }, 
+            "Type": "AWS::CloudWatch::Alarm"
+        }, 
+        "LISTENER443": {
+            "Properties": {
+                "Certificates": [
+                    {
+                        "CertificateArn": "arn:aws:iam::<accountid>:server-certificate/<certificate-name>"
+                    }
+                ], 
+                "DefaultActions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TARGET443"
+                        }, 
+                        "Type": "forward"
+                    }
+                ], 
+                "LoadBalancerArn": {
+                    "Ref": "ALB"
+                }, 
+                "Port": 443, 
+                "Protocol": "HTTPS"
+            }, 
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        }, 
+        "LISTENER9200": {
+            "Properties": {
+                "DefaultActions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TARGET9200"
+                        }, 
+                        "Type": "forward"
+                    }
+                ], 
+                "LoadBalancerArn": {
+                    "Ref": "ALB"
+                }, 
+                "Port": 9200, 
+                "Protocol": "HTTP"
+            }, 
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        }, 
+        "SECGROUP": {
+            "Properties": {
+                "GroupDescription": "Security group for ", 
+                "SecurityGroupEgress": [
+                    {
+                        "CidrIp": "0.0.0.0/0", 
+                        "FromPort": 0, 
+                        "IpProtocol": -1, 
+                        "ToPort": 0
+                    }
+                ], 
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "172.18.0.0/22", 
+                        "FromPort": 80, 
+                        "IpProtocol": "tcp", 
+                        "ToPort": 80
+                    }, 
+                    {
+                        "CidrIp": "172.18.0.0/22", 
+                        "FromPort": 443, 
+                        "IpProtocol": "tcp", 
+                        "ToPort": 443
+                    }, 
+                    {
+                        "FromPort": 9200, 
+                        "IpProtocol": "tcp", 
+                        "SourceSecurityGroupId": "sg-12345678", 
+                        "ToPort": 9200
+                    }
+                ], 
+                "Tags": [
+                    {
+                        "Key": "Name", 
+                        "Value": "-alb"
+                    }
+                ], 
+                "VpcId": "vpc-12345678"
+            }, 
+            "Type": "AWS::EC2::SecurityGroup"
+        }, 
+        "TARGET443": {
+            "Properties": {
+                "HealthCheckIntervalSeconds": 10, 
+                "HealthCheckPath": "/healthcheck", 
+                "HealthCheckPort": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "HealthCheckTimeoutSeconds": 5, 
+                "HealthyThresholdCount": 5, 
+                "Matcher": {
+                    "HttpCode": "200,204"
+                }, 
+                "Port": 443, 
+                "Protocol": "HTTPS", 
+                "Tags": [
+                    {
+                        "Key": "Name", 
+                        "Value": null
+                    }
+                ], 
+                "TargetType": "instance", 
+                "Targets": [
+                    {
+                        "Id": "i-1234567890"
+                    }
+                ], 
+                "UnhealthyThresholdCount": 2, 
+                "VpcId": "vpc-12345678"
+            }, 
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+        }, 
+        "TARGET443AlarmThrottles": {
+            "Properties": {
+                "ActionsEnabled": "true", 
+                "AlarmActions": [
+                    "arn:aws:sns:us-east-1:<accountid>:<queue-name>"
+                ], 
+                "AlarmDescription": "The throttle rate is >= 1", 
+                "ComparisonOperator": "GreaterThanOrEqualToThreshold", 
+                "Dimensions": [
+                    {
+                        "Name": "LoadBalancer", 
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "ALB", 
+                                "LoadBalancerFullName"
+                            ]
+                        }
+                    }, 
+                    {
+                        "Name": "TargetGroup", 
+                        "Value": {
+                            "Fn::GetAtt": [
+                                "TARGET443", 
+                                "TargetGroupFullName"
+                            ]
+                        }
+                    }
+                ], 
+                "EvaluationPeriods": 1, 
+                "MetricName": "Throttles", 
+                "Namespace": "AWS/Lambda", 
+                "Period": 300, 
+                "Statistic": "Sum", 
+                "Threshold": "1"
+            }, 
+            "Type": "AWS::CloudWatch::Alarm"
+        }, 
+        "TARGET9200": {
+            "Properties": {
+                "HealthCheckIntervalSeconds": 10, 
+                "HealthCheckPath": "/", 
+                "HealthCheckPort": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "HealthCheckTimeoutSeconds": 5, 
+                "HealthyThresholdCount": 5, 
+                "Matcher": {
+                    "HttpCode": "200"
+                }, 
+                "Port": 9200, 
+                "Protocol": "HTTP", 
+                "Tags": [
+                    {
+                        "Key": "Name", 
+                        "Value": null
+                    }
+                ], 
+                "TargetType": "instance", 
+                "Targets": [
+                    {
+                        "Id": "i-1234567890"
+                    }
+                ], 
+                "UnhealthyThresholdCount": 2, 
+                "VpcId": "vpc-12345678"
+            }, 
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+        }
+    }
+}

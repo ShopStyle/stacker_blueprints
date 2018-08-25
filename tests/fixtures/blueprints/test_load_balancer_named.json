@@ -118,7 +118,7 @@
         "ALB": {
             "Properties": {
                 "IpAddressType": "ipv4", 
-                "Name": "namespace-service", 
+                "Name": "myALB", 
                 "Scheme": "internal", 
                 "SecurityGroups": [
                     {
@@ -133,7 +133,7 @@
                 "Tags": [
                     {
                         "Key": "Name", 
-                        "Value": "namespace-service"
+                        "Value": "myALB"
                     }
                 ], 
                 "Type": "application"
@@ -211,12 +211,12 @@
         }, 
         "SECGROUP": {
             "Properties": {
-                "GroupDescription": "Security group for namespace-service", 
+                "GroupDescription": "Security group for myALB", 
                 "SecurityGroupEgress": [
                     {
                         "CidrIp": "0.0.0.0/0", 
                         "FromPort": 0, 
-                        "IpProtocol": "-1", 
+                        "IpProtocol": -1, 
                         "ToPort": 0
                     }
                 ], 
@@ -243,7 +243,7 @@
                 "Tags": [
                     {
                         "Key": "Name", 
-                        "Value": "namespace-service-alb"
+                        "Value": "myALB-alb"
                     }
                 ], 
                 "VpcId": "vpc-12345678"

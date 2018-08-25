@@ -15,7 +15,12 @@ class LoadBalancer(Blueprint):
     VARIABLES = {
         'Name': {
             'type': str,
-            'description': 'Specifies a name for the load balancer.'
+            'description': 'Specifies a name for the load balancer. '
+                           'If you specify a name, you cannot perform updates that '
+                           'require replacement of this resource. You can perform '
+                           'updates that require no or some interruption. If you '
+                           'must replace the resource, specify a new name.',
+            'default': '',
         },
         'Scheme': {
             'type': str,
@@ -68,7 +73,7 @@ class LoadBalancer(Blueprint):
             'description': 'The physical ID of the VPC.'
         },
         'TargetGroups': {
-            'type': list,
+            'type': dict,
             'description': 'List of target groups to attach to the load balancer.'
         },
         'Listeners': {
@@ -141,17 +146,24 @@ class LoadBalancer(Blueprint):
                 self.create_security_group(ingress_rules, egress_rules).Ref()
             )
 
+        alb_attrs = {
+            'Scheme': v['Scheme'],
+            'IpAddressType': v['IpAddressType'],
+            'SecurityGroups': security_groups,
+            'Subnets': v['SubnetIds'],
+            'Tags': Tags(tags),
+            'Type': v['Type'],
+        }
+
+        alb_name = v.get('Name')
+        if alb_name:
+            alb_attrs['Name'] = alb_name
+
         logical_name = 'ALB'
         load_balancer = t.add_resource(
             alb.LoadBalancer(
                 logical_name,
-                Name=v['Name'],
-                Scheme=v['Scheme'],
-                IpAddressType=v['IpAddressType'],
-                SecurityGroups=security_groups,
-                Subnets=v['SubnetIds'],
-                Tags=Tags(tags),
-                Type=v['Type'],
+                **alb_attrs
             )
         )
 
@@ -196,7 +208,7 @@ class LoadBalancer(Blueprint):
         v = self.get_variables()
         target_groups = {}
 
-        for tg in v['TargetGroups']:
+        for tg_name, tg in v['TargetGroups'].iteritems():
             # target groups have a max length of 32 chars
             logical_name = 'TARGET{}'.format(tg['Port'])
             hc = tg['HealthCheck']
@@ -216,7 +228,7 @@ class LoadBalancer(Blueprint):
                 hc_attrs['HealthCheckProtocol'] = hc_protocol.upper()
 
             tags = tg.get('Tags', {})
-            tags.setdefault('Name', tg['Name'])
+            tags.setdefault('Name', tg.get('Name'))
 
             target_group = t.add_resource(
                 alb.TargetGroup(
@@ -242,7 +254,7 @@ class LoadBalancer(Blueprint):
                     Output(logical_name + attr, Value=target_group.GetAtt(attr))
                 )
 
-            target_groups[tg['Name']] = target_group
+            target_groups[tg_name] = target_group
 
             alarms = tg.get('Alarms', [])
             self.create_target_alarms(alarms, logical_name, load_balancer, target_group)
@@ -258,9 +270,9 @@ class LoadBalancer(Blueprint):
             attrs = {
                 'DefaultActions': [
                     alb.Action(
-                        TargetGroupArn=target_groups[a['TargetGroup']].Ref(),
-                        Type=a['Type'],
-                    ) for a in l['DefaultActions']
+                        TargetGroupArn=target_groups[action['TargetGroup']].Ref(),
+                        Type=action['Type'],
+                    ) for action in l['DefaultActions']
                 ],
                 'LoadBalancerArn': load_balancer.Ref(),
                 'Port': l['Port'],
