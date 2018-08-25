@@ -7,13 +7,13 @@ install_requires = [
     "python-dateutil<3.0.0",
     "stacker>=1.0.1",
     "troposphere>=2.2.2",
-    "awacs>=0.7.0,<0.8.0",
+    "awacs>=0.8.0",
 ]
 
 tests_require = [
     "nose",
     "mock~=2.0.0",
-    "stacker>=1.1.1",
+    "stacker>=1.4.0",
 ]
 
 

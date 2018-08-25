@@ -1,5 +1,26 @@
 {
     "Outputs": {
+        "RoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Role", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "RoleId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Role", 
+                    "RoleId"
+                ]
+            }
+        }, 
+        "RoleName": {
+            "Value": {
+                "Ref": "Role"
+            }
+        }, 
         "ServiceArn": {
             "Value": {
                 "Ref": "Service"
@@ -33,11 +54,42 @@
         }
     }, 
     "Resources": {
+        "Role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ecs-tasks.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ], 
+                    "Version": "2012-10-17"
+                }, 
+                "Path": "/"
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
         "Service": {
             "Properties": {
                 "Cluster": "fake-fargate-cluster", 
+                "DeploymentConfiguration": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "DesiredCount": 3, 
+                "HealthCheckGracePeriodSeconds": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "LaunchType": "FARGATE", 
+                "LoadBalancers": {
+                    "Ref": "AWS::NoValue"
+                }, 
                 "NetworkConfiguration": {
                     "AwsvpcConfiguration": {
                         "SecurityGroups": [
@@ -67,21 +119,31 @@
                         "Cpu": 1024, 
                         "Environment": [
                             {
-                                "Name": "DEBUG", 
-                                "Value": "false"
-                            }, 
-                            {
                                 "Name": "DATABASE_URL", 
                                 "Value": "sql://fake_db/fake_db"
+                            }, 
+                            {
+                                "Name": "DEBUG", 
+                                "Value": "false"
                             }
                         ], 
                         "Essential": "true", 
                         "Image": "fake_repo/image:12345", 
                         "LogConfiguration": {
-                            "Ref": "AWS::NoValue"
+                            "LogDriver": "awslogs", 
+                            "Options": {
+                                "awslogs-group": "WorkerService", 
+                                "awslogs-region": {
+                                    "Ref": "AWS::Region"
+                                }, 
+                                "awslogs-stream-prefix": "WorkerService"
+                            }
                         }, 
                         "Memory": 2048, 
-                        "Name": "WorkerService"
+                        "Name": "WorkerService", 
+                        "PortMappings": {
+                            "Ref": "AWS::NoValue"
+                        }
                     }
                 ], 
                 "Cpu": "1024", 
@@ -95,7 +157,10 @@
                 "Memory": "2048", 
                 "NetworkMode": "awsvpc", 
                 "TaskRoleArn": {
-                    "Ref": "AWS::NoValue"
+                    "Fn::GetAtt": [
+                        "Role", 
+                        "Arn"
+                    ]
                 }
             }, 
             "Type": "AWS::ECS::TaskDefinition"
@@ -115,7 +180,8 @@
                                 ]
                             }
                         }
-                    ]
+                    ], 
+                    "Version": "2012-10-17"
                 }
             }, 
             "Type": "AWS::IAM::Role"
@@ -142,6 +208,51 @@
                             "Effect": "Allow", 
                             "Resource": [
                                 "*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "logs:CreateLogGroup", 
+                                "logs:CreateLogStream", 
+                                "logs:PutLogEvents"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:logs:", 
+                                            {
+                                                "Ref": "AWS::Region"
+                                            }, 
+                                            ":", 
+                                            {
+                                                "Ref": "AWS::AccountId"
+                                            }, 
+                                            ":log-group:", 
+                                            "WorkerService"
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:logs:", 
+                                            {
+                                                "Ref": "AWS::Region"
+                                            }, 
+                                            ":", 
+                                            {
+                                                "Ref": "AWS::AccountId"
+                                            }, 
+                                            ":log-group:", 
+                                            "WorkerService", 
+                                            ":*"
+                                        ]
+                                    ]
+                                }
                             ]
                         }
                     ]

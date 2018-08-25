@@ -1,0 +1,144 @@
+{
+    "Outputs": {
+        "RoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Role", 
+                    "Arn"
+                ]
+            }
+        }, 
+        "RoleId": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Role", 
+                    "RoleId"
+                ]
+            }
+        }, 
+        "RoleName": {
+            "Value": {
+                "Ref": "Role"
+            }
+        }, 
+        "ServiceArn": {
+            "Value": {
+                "Ref": "Service"
+            }
+        }, 
+        "ServiceName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Service", 
+                    "Name"
+                ]
+            }
+        }, 
+        "TaskDefinitionArn": {
+            "Value": {
+                "Ref": "TaskDefinition"
+            }
+        }
+    }, 
+    "Resources": {
+        "Role": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": {
+                                "Service": [
+                                    "ecs-tasks.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ], 
+                    "Version": "2012-10-17"
+                }, 
+                "Path": "/"
+            }, 
+            "Type": "AWS::IAM::Role"
+        }, 
+        "Service": {
+            "Properties": {
+                "Cluster": "fake-fargate-cluster", 
+                "DeploymentConfiguration": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "DesiredCount": 3, 
+                "HealthCheckGracePeriodSeconds": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "LaunchType": "EC2", 
+                "LoadBalancers": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "NetworkConfiguration": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "ServiceName": "WorkerService", 
+                "TaskDefinition": {
+                    "Ref": "TaskDefinition"
+                }
+            }, 
+            "Type": "AWS::ECS::Service"
+        }, 
+        "TaskDefinition": {
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Command": [
+                            "/bin/run", 
+                            "--args 1"
+                        ], 
+                        "Cpu": 1024, 
+                        "Environment": [
+                            {
+                                "Name": "DATABASE_URL", 
+                                "Value": "sql://fake_db/fake_db"
+                            }, 
+                            {
+                                "Name": "DEBUG", 
+                                "Value": "false"
+                            }
+                        ], 
+                        "Essential": "true", 
+                        "Image": "fake_repo/image:12345", 
+                        "LogConfiguration": {
+                            "LogDriver": "awslogs", 
+                            "Options": {
+                                "awslogs-group": "WorkerService", 
+                                "awslogs-region": {
+                                    "Ref": "AWS::Region"
+                                }, 
+                                "awslogs-stream-prefix": "WorkerService"
+                            }
+                        }, 
+                        "Memory": 2048, 
+                        "Name": "WorkerService", 
+                        "PortMappings": {
+                            "Ref": "AWS::NoValue"
+                        }
+                    }
+                ], 
+                "Cpu": "1024", 
+                "Family": "WorkerService", 
+                "Memory": "2048", 
+                "NetworkMode": {
+                    "Ref": "AWS::NoValue"
+                }, 
+                "TaskRoleArn": {
+                    "Fn::GetAtt": [
+                        "Role", 
+                        "Arn"
+                    ]
+                }
+            }, 
+            "Type": "AWS::ECS::TaskDefinition"
+        }
+    }
+}

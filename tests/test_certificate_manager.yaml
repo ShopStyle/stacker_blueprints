@@ -1,0 +1,12 @@
+---
+namespace: test
+stacks:
+  - name: certificates
+    class_path: stacker_blueprints.certificate_manager.Certificates
+    variables:
+      Certificates:
+        Simple:
+          DomainName: blog.example.com
+          SubjectAlternativeNames:
+            - www.example.com
+            - help.example.com
