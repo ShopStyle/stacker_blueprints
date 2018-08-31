@@ -110,7 +110,8 @@ class CloudFrontDistribution(Blueprint):
         },
     }
 
-    def get_tags(self):
+    @property
+    def tags(self):
         v = self.get_variables()
         tag_var = v["Tags"]
         t = {"Name": self.name}
@@ -118,56 +119,64 @@ class CloudFrontDistribution(Blueprint):
         t['Stacker'] = 'Created by Stacker'
         return Tags(**t)
 
-    def get_origins(self):
+    @property
+    def origins(self):
         v = self.get_variables()
         return [
             cloudfront.Origin.from_dict('O', o) for o in v['Origins']
         ]
 
-    def get_cache_behaviors(self):
+    @property
+    def cache_behaviors(self):
         v = self.get_variables()
         return [
             cloudfront.CacheBehavior.from_dict('CB', c) for c in v['CacheBehaviors']
         ]
 
-    def get_default_cache_behavior(self):
+    @property
+    def default_cache_behavior(self):
         v = self.get_variables()
         return cloudfront.DefaultCacheBehavior.from_dict('DCB', v['DefaultCacheBehavior'])
 
-    def get_custom_error_responses(self, ):
+    @property
+    def custom_error_responses(self, ):
         v = self.get_variables()
         return [
             cloudfront.CustomErrorResponse.from_dict('CER', cr)
             for cr in v['CustomErrorResponses']
         ]
 
-    def get_restrictions(self):
+    @property
+    def restrictions(self):
         v = self.get_variables()
         return cloudfront.Restrictions.from_dict('RES', v['Restrictions'])
 
-    def get_viewer_certificate(self):
+    @property
+    def viewer_certificate(self):
         v = self.get_variables()
         return cloudfront.ViewerCertificate.from_dict('CERT', v['ViewerCertificate'])
 
-    def get_logging(self):
+    @property
+    def logging(self):
         v = self.get_variables()
         return cloudfront.Logging.from_dict('LOG', v['Logging'])
 
-    def get_distribution_config_attrs(self):
+    @property
+    def distribution_config_attrs(self):
         v = self.get_variables()
 
         attrs = {
             'Aliases': v['Aliases'],
-            'CacheBehaviors': self.get_cache_behaviors(),
+            'CacheBehaviors': self.cache_behaviors,
             'Comment': v['Comment'],
-            'CustomErrorResponses': self.get_custom_error_responses(),
-            'DefaultCacheBehavior': self.get_default_cache_behavior(),
+            'CustomErrorResponses': self.custom_error_responses,
+            'DefaultCacheBehavior': self.default_cache_behavior,
             'DefaultRootObject': v['DefaultRootObject'],
             'Enabled': v['Enabled'],
             'IPV6Enabled': v['IPV6Enabled'],
-            'Origins': self.get_origins(),
+            'Origins': self.origins,
             'PriceClass': v['PriceClass'],
-            'ViewerCertificate': self.get_viewer_certificate(),
+            'ViewerCertificate': self.viewer_certificate,
             'WebACLId': v['WebACLId'],
         }
 
@@ -175,26 +184,26 @@ class CloudFrontDistribution(Blueprint):
             attrs['HttpVersion'] = v['HttpVersion']
 
         if v['Logging']:
-            attrs['Logging'] = self.get_logging()
+            attrs['Logging'] = self.logging
 
         if v['Restrictions']:
-            attrs['Restrictions'] = self.get_restrictions()
+            attrs['Restrictions'] = self.restrictions
 
         return attrs
 
-    def get_distribution_attrs(self):
-
+    @property
+    def distribution_attrs(self):
         return {
             'DistributionConfig': cloudfront.DistributionConfig(
-                **self.get_distribution_config_attrs()
+                **self.distribution_config_attrs
             ),
-            'Tags': self.get_tags(),
+            'Tags': self.tags,
         }
 
-    def create_distribution(self):
+    def create_template(self):
         t = self.template
         distribution = t.add_resource(
-            cloudfront.Distribution('CFDIST', **self.get_distribution_attrs())
+            cloudfront.Distribution('CFDIST', **self.distribution_attrs)
         )
         t.add_output(
             Output("DistributionId", Value=distribution.Ref())
@@ -205,6 +214,3 @@ class CloudFrontDistribution(Blueprint):
         t.add_output(
             Output("HostedZoneId", Value=route53.CLOUDFRONT_ZONE_ID)
         )
-
-    def create_template(self):
-        self.create_distribution()
