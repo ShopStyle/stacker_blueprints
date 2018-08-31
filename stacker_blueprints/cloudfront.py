@@ -1,7 +1,13 @@
 from stacker.blueprints.base import Blueprint
 from stacker_blueprints import route53
 
-from troposphere import cloudfront, Output, Tags
+from troposphere import (
+    cloudfront,
+    Output,
+    Tags,
+)
+
+from stacker.blueprints.variables.types import TroposphereType
 
 
 class CloudFrontDistribution(Blueprint):
@@ -21,10 +27,13 @@ class CloudFrontDistribution(Blueprint):
             "default": [],
         },
         "CacheBehaviors": {
-            "type": list,
+            "type": TroposphereType(
+                cloudfront.CacheBehavior,
+                many=True
+            ),
             "description": "Describes how CloudFront processes requests "
                            "There should be one cache behavior per origin",
-            "default": [],
+            "default": None,
         },
         "Comment": {
             "type": str,
@@ -32,12 +41,17 @@ class CloudFrontDistribution(Blueprint):
             "default": "",
         },
         "CustomErrorResponses": {
-            "type": list,
+            "type": TroposphereType(
+                cloudfront.CustomErrorResponse,
+                many=True,
+            ),
             "description": "List of CustomErrorResponses",
             "default": [],
         },
         "DefaultCacheBehavior": {
-            "type": dict,
+            "type": TroposphereType(
+                cloudfront.DefaultCacheBehavior,
+            ),
             "description": "The default cache behavior if you don't specify "
                            " a CacheBehavior (required)",
         },
@@ -70,10 +84,13 @@ class CloudFrontDistribution(Blueprint):
             "default": {},
         },
         "Origins": {
-            "type": list,
+            "type": TroposphereType(
+                cloudfront.Origin,
+                many=True
+            ),
             "description": "Define where CloudFront gets your files. "
                            "You must create at least one origin",
-            "default": [],
+            "default": None,
         },
         "PriceClass": {
             "type": str,
@@ -84,10 +101,13 @@ class CloudFrontDistribution(Blueprint):
             "default": "PriceClass_100",
         },
         "Restrictions": {
-            "type": dict,
+            "type": TroposphereType(
+                cloudfront.Restrictions,
+                optional=True,
+            ),
             "description": "A complex type that identifies ways in which you want to "
                            "restrict distribution of your content.",
-            "default": {},
+            "default": None,
         },
         "Tags": {
             "type": dict,
@@ -96,7 +116,9 @@ class CloudFrontDistribution(Blueprint):
             "default": {},
         },
         "ViewerCertificate": {
-            "type": dict,
+            "type": TroposphereType(
+                cloudfront.ViewerCertificate,
+            ),
             "description": "",
             "default": {
                 "CloudFrontDefaultCertificate": True,
@@ -121,45 +143,31 @@ class CloudFrontDistribution(Blueprint):
 
     @property
     def origins(self):
-        v = self.get_variables()
-        return [
-            cloudfront.Origin.from_dict('O', o) for o in v['Origins']
-        ]
+        return self.get_variables()['Origins']
 
     @property
     def cache_behaviors(self):
-        v = self.get_variables()
-        return [
-            cloudfront.CacheBehavior.from_dict('CB', c) for c in v['CacheBehaviors']
-        ]
+        return self.get_variables()['CacheBehaviors']
 
     @property
     def default_cache_behavior(self):
-        v = self.get_variables()
-        return cloudfront.DefaultCacheBehavior.from_dict('DCB', v['DefaultCacheBehavior'])
+        return self.get_variables()['DefaultCacheBehavior']
 
     @property
     def custom_error_responses(self, ):
-        v = self.get_variables()
-        return [
-            cloudfront.CustomErrorResponse.from_dict('CER', cr)
-            for cr in v['CustomErrorResponses']
-        ]
+        return self.get_variables()['CustomErrorResponses']
 
     @property
     def restrictions(self):
-        v = self.get_variables()
-        return cloudfront.Restrictions.from_dict('RES', v['Restrictions'])
+        return self.get_variables()['Restrictions']
 
     @property
     def viewer_certificate(self):
-        v = self.get_variables()
-        return cloudfront.ViewerCertificate.from_dict('CERT', v['ViewerCertificate'])
+        return self.get_variables()['ViewerCertificate']
 
     @property
     def logging(self):
-        v = self.get_variables()
-        return cloudfront.Logging.from_dict('LOG', v['Logging'])
+        return self.get_variables()['Logging']
 
     @property
     def distribution_config_attrs(self):
