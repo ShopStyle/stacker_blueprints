@@ -1,0 +1,34 @@
+namespace: test
+stacks:
+  - name: test_cloudfront_distribution
+    class_path: stacker_blueprints.cloudfront.CloudFrontDistribution
+    variables:
+      Aliases:
+      - domain.name
+      CacheBehaviors:
+        TargetOriginId: AnotherOrigin
+        ViewerProtocolPolicy: allow-all
+        PathPattern: /
+        ForwardedValues:
+          QueryString: True,
+      DefaultCacheBehavior:
+        TargetOriginId: DefaultOrigin
+        ViewerProtocolPolicy: allow-all
+        ForwardedValues:
+          QueryString: True,
+      Enabled: True
+      Origins:
+      - Id: DefaultOrigin
+        DomainName: bucket.s3.amazonaws.com
+        S3OriginConfig: 
+          OriginAccessIdentity: 
+      - Id: AnotherOrigin
+        DomainName: mybackend.domain.name
+        CustomOriginConfig:
+          HTTPPort: 80,
+          HTTPSPort: 443,
+          OriginKeepaliveTimeout: 10,
+          OriginProtocolPolicy: match-viewer
+          OriginReadTimeout: 20,
+      Tags:
+        A: Tag
