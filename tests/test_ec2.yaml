@@ -1,0 +1,39 @@
+---
+namespace: test
+stacks:
+  - name: ec2_instances
+    class_path: stacker_blueprints.ec2.Instances
+    variables:
+      Instances:
+        MyInstance:
+          ImageId: ami-abc12345
+  - name: ec2_instances_with_public_ip
+    class_path: stacker_blueprints.ec2.Instances
+    variables:
+      Instances:
+        MyInstance:
+          ImageId: ami-abc12345
+          NetworkInterfaces:
+            - DeviceIndex: 1
+              NetworkInterfaceId: net-dafdafadf1
+            - DeviceIndex: 0
+              NetworkInterfaceId: net-dafdafadf0
+              AssociatePublicIpAddress: true
+  - name: ec2_instances_with_interfaces_no_public_ip
+    class_path: stacker_blueprints.ec2.Instances
+    variables:
+      Instances:
+        MyInstance:
+          ImageId: ami-abc12345
+          NetworkInterfaces:
+            - DeviceIndex: 1
+              NetworkInterfaceId: net-dafdafadf1
+            - DeviceIndex: 0
+              NetworkInterfaceId: net-dafdafadf0
+
+  - name: ec2_security_groups
+    class_path: stacker_blueprints.ec2.SecurityGroups
+    variables:
+      SecurityGroups:
+        MySG1:
+          GroupDescription: My first SecurityGroup

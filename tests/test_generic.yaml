@@ -1,0 +1,13 @@
+---
+namespace: test
+stacks:
+  - name: test_generic_GenericResourceCreator
+    class_path: stacker_blueprints.generic.GenericResourceCreator
+    variables:
+      Class: ec2.Volume
+      Output: VolumeId
+      Properties:
+        VolumeType: gp2
+        Size: '600'
+        Encrypted: 'true'
+        AvailabilityZone: us-east-1b

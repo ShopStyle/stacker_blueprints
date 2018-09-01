@@ -1,0 +1,16 @@
+---
+namespace: test
+stacks:
+  - name: topics
+    class_path: stacker_blueprints.sns.Topics
+    variables:
+      Topics:
+        WithoutSubscription:
+          DisplayName: SampleTopicWithoutSub
+        Example:
+          DisplayName: ExampleTopic
+          Subscription:
+            - Endpoint: arn:aws:sqs:us-east-1:123456788901:example-queue
+              Protocol: sqs
+            - Endpoint: postmaster@example.com
+              Protocol: email

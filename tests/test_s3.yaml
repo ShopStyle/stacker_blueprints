@@ -1,0 +1,33 @@
+---
+namespace: test
+stacks:
+  - name: buckets
+    class_path: stacker_blueprints.s3.Buckets
+    variables: &variables
+      Buckets:
+        Simple: {}
+        Cycle:
+          LifecycleConfiguration:
+            Rules:
+              - Status: Enabled
+                ExpirationInDays: 40
+      ReadRoles:
+        - Role1
+        - Role2
+      ReadWriteRoles:
+        - Role3
+        - Role4
+  - name: s3_static_website
+    class_path: stacker_blueprints.s3.Buckets
+    variables:
+      Buckets:
+        Blog:
+          AccessControl: PublicRead
+          WebsiteConfiguration:
+            IndexDocument: index.html
+      ReadRoles:
+        - Role1
+        - Role2
+      ReadWriteRoles:
+        - Role3
+        - Role4
