@@ -12,7 +12,7 @@ from stacker.blueprints.variables.types import TroposphereType
 
 class CloudFrontDistribution(Blueprint):
     """
-    CloudFront creates a CloudFront distribution.
+    Creates a CloudFront distribution.
 
     https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-cloudfront.html
     https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CacheBehavior.html
